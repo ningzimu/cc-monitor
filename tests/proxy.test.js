@@ -48,7 +48,11 @@ async function waitForHttp(url, timeoutMs = 5000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-async function readOnlyLogFile(logDir, timeoutMs = 5000) {
+async function readOnlyLogFile(logDir, options = {}) {
+  const {
+    timeoutMs = 5000,
+    predicate = () => true
+  } = typeof options === 'number' ? { timeoutMs: options } : options;
   const deadline = Date.now() + timeoutMs;
   let lastError;
 
@@ -57,10 +61,13 @@ async function readOnlyLogFile(logDir, timeoutMs = 5000) {
       const files = await readdir(logDir);
       if (files.length === 1) {
         const content = await readFile(path.join(logDir, files[0]), 'utf8');
-        return {
+        const result = {
           files,
           data: JSON.parse(content)
         };
+        if (predicate(result.data)) {
+          return result;
+        }
       }
     } catch (error) {
       lastError = error;
@@ -393,7 +400,13 @@ test('proxy preserves streamed tool_use blocks when SSE events are split across 
 
   assert.equal(response.statusCode, 200);
 
-  const { files, data: logData } = await readOnlyLogFile(path.join(monitorHome, 'raw_logs'));
+  const { files, data: logData } = await readOnlyLogFile(path.join(monitorHome, 'raw_logs'), {
+    predicate: data => Boolean(
+      data.interactions
+        ?.find(interaction => interaction.type === 'stream.final')
+        ?.data?.content?.[0]
+    )
+  });
   assert.equal(files.length, 1);
 
   const final = logData.interactions.find(interaction => interaction.type === 'stream.final');

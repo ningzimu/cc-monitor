@@ -1,4 +1,4 @@
-name: Publish to npm
+name: Release
 
 on:
   push:
@@ -6,21 +6,23 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 concurrency:
-  group: npm-publish-${{ github.ref_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   publish:
-    name: Publish package
+    name: Publish package and release
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -57,3 +59,61 @@ jobs:
       - name: Publish to npm
         if: steps.published.outputs.exists != 'true'
         run: npm publish --access public
+
+      - name: Build grouped release notes
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_tag="${GITHUB_REF_NAME}"
+          previous_tag="$(git tag --sort=-version:refname | grep -Fxv "${current_tag}" | head -n 1 || true)"
+          range="${current_tag}"
+
+          if [ -n "${previous_tag}" ]; then
+            range="${previous_tag}..${current_tag}"
+          fi
+
+          features="$(git log --reverse --pretty=format:'%s' "${range}" | grep -E '^feat(\(.+\))?: ' || true)"
+          fixes="$(git log --reverse --pretty=format:'%s' "${range}" | grep -E '^fix(\(.+\))?: ' || true)"
+          others="$(git log --reverse --pretty=format:'%s' "${range}" | grep -Ev '^(feat|fix)(\(.+\))?: ' || true)"
+
+          {
+            echo "body<<EOF"
+            if [ -n "${features}" ]; then
+              echo "## Features"
+              while IFS= read -r line; do
+                [ -n "${line}" ] && echo "- ${line}"
+              done <<< "${features}"
+              echo
+            fi
+            if [ -n "${fixes}" ]; then
+              echo "## Bug Fixes"
+              while IFS= read -r line; do
+                [ -n "${line}" ] && echo "- ${line}"
+              done <<< "${fixes}"
+              echo
+            fi
+            if [ -n "${others}" ]; then
+              echo "## Others"
+              while IFS= read -r line; do
+                [ -n "${line}" ] && echo "- ${line}"
+              done <<< "${others}"
+              echo
+            fi
+            echo "Install:"
+            echo '```bash'
+            echo "npm install -g claude-code-lens"
+            echo '```'
+            if [ -n "${previous_tag}" ]; then
+              echo
+              echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${previous_tag}...${current_tag}"
+            fi
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: false
+          body: ${{ steps.notes.outputs.body }}
