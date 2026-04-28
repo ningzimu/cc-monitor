@@ -1977,6 +1977,7 @@
       data: null,
       index: 0,
       currentLogUrl: null,
+      localFiles: new Map(),
       promptMap: {},            // id -> text
       promptCounts: {},         // id -> count
       toolDefs: {},             // key -> def
@@ -3148,8 +3149,40 @@
 
     // -------- Load log files list --------
     const SELECT_FILE_VALUE = '__select_file__';
+    const LOCAL_FILE_PREFIX = '__local_file__:';
     const SELECTED_LOG_KEY = 'selectedLog';
     const LOG_INDEX_KEY_PREFIX = 'selectedLogIndex:';
+
+    function isLocalFileValue(value) {
+      return typeof value === 'string' && value.startsWith(LOCAL_FILE_PREFIX);
+    }
+
+    function localFileValue(fileName) {
+      return `${LOCAL_FILE_PREFIX}${encodeURIComponent(fileName)}`;
+    }
+
+    function addLocalFileOption(fileName, text) {
+      const value = localFileValue(fileName);
+      state.localFiles.set(value, {
+        name: fileName,
+        text,
+        mtime: Date.now()
+      });
+
+      const existing = Array.from(logSelect.options).find(opt => opt.value === value);
+      if (existing) {
+        existing.textContent = fileName;
+        existing.dataset.source = 'local';
+        return value;
+      }
+
+      const opt = document.createElement('option');
+      opt.value = value;
+      opt.textContent = fileName;
+      opt.dataset.source = 'local';
+      logSelect.appendChild(opt);
+      return value;
+    }
 
     function logIndexKey(url) {
       return `${LOG_INDEX_KEY_PREFIX}${url}`;
@@ -3251,6 +3284,16 @@
         logSelect.appendChild(opt);
       });
 
+      Array.from(state.localFiles.entries())
+        .sort(([, a], [, b]) => b.mtime - a.mtime || a.name.localeCompare(b.name))
+        .forEach(([value, file]) => {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.textContent = file.name;
+          opt.dataset.source = 'local';
+          logSelect.appendChild(opt);
+        });
+
       // Try to restore previous selection from localStorage
       let targetPath = null;
       if (preferredPath) {
@@ -3293,6 +3336,9 @@
 
     async function loadLogFile(url, preservePosition = false) {
       if (!url) return;
+      if (isLocalFileValue(url)) {
+        return loadLocalLogFile(url, preservePosition);
+      }
 
       // Remember current position if preserving the already selected file.
       const previousIndex = preservePosition && state.currentLogUrl === url ? state.index : null;
@@ -3329,6 +3375,39 @@
       } catch (err) {
         console.error('Failed to load log file:', err);
         alert(`Failed to load log: ${err.message}`);
+      }
+    }
+
+    async function loadLocalLogFile(value, preservePosition = false) {
+      const file = state.localFiles.get(value);
+      if (!file) {
+        alert('Local file is no longer available. Please select it again.');
+        return;
+      }
+
+      const previousIndex = preservePosition && state.currentLogUrl === value ? state.index : null;
+
+      try {
+        if (typeof window.parseConversationLog !== 'function') {
+          throw new Error('parser.js is missing parseConversationLog(logString)');
+        }
+
+        const json = window.parseConversationLog(file.text);
+        fileNameEl.textContent = file.name;
+        state.data = json;
+        buildMaps(json);
+        renderResources();
+
+        const total = (json.conversations || []).length;
+        metaInfoEl.textContent = '';
+
+        state.currentLogUrl = value;
+        const storedIndex = readStoredIndex(value);
+        const targetIndex = Math.min(previousIndex ?? storedIndex ?? 0, total - 1);
+        setIndex(targetIndex);
+      } catch (err) {
+        console.error('Failed to load local log file:', err);
+        alert(`Failed to load local log: ${err.message}`);
       }
     }
 
@@ -3441,7 +3520,7 @@
 
         // Save selection to localStorage
         try {
-          localStorage.setItem(SELECTED_LOG_KEY, value);
+          localStorage.setItem(SELECTED_LOG_KEY, isLocalFileValue(value) ? '__file_input__' : value);
           console.log('[Visualizer] Saved selection to localStorage:', value);
         } catch (e) {
           console.warn('[Visualizer] Failed to save to localStorage:', e);
@@ -3470,6 +3549,7 @@
 
         console.log(json)
 
+        const localValue = addLocalFileOption(file.name, text);
         state.data = json;
         buildMaps(json);
         renderResources();
@@ -3477,11 +3557,11 @@
         const total = (json.conversations || []).length;
         metaInfoEl.textContent = '';
 
-        state.currentLogUrl = null;
+        state.currentLogUrl = localValue;
         setIndex(0);
 
-        // Keep dropdown at "Select file..." after loading from file input
-        logSelect.value = SELECT_FILE_VALUE;
+        logSelect.value = localValue;
+        logSelect.dispatchEvent(new Event('change'));
 
         // Mark this session as file input (don't restore on refresh)
         try {

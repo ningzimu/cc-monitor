@@ -31,9 +31,11 @@ const visualizerPath = join(PROJECT_ROOT, 'src', 'visualizer', 'server.js');
 
 const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
   path.join(os.homedir(), '.claude-code-lens');
+const LEGACY_APP_HOME = path.join(os.homedir(), '.claude-code-monitor');
 const APP_LOG_DIR = path.join(APP_HOME, 'logs');
 const PID_FILE = path.join(APP_LOG_DIR, 'proxy.pid');
 const VISUALIZER_PID_FILE = path.join(APP_LOG_DIR, 'visualizer.pid');
+const LEGACY_VISUALIZER_PID_FILE = path.join(LEGACY_APP_HOME, 'logs', 'visualizer.pid');
 const LOG_FILE = path.join(APP_LOG_DIR, 'proxy-server.log');
 const VISUALIZER_LOG_FILE = path.join(APP_LOG_DIR, 'visualizer.log');
 const USER_CONFIG_FILE = path.join(APP_HOME, 'config.json');
@@ -143,10 +145,10 @@ function checkPortAvailability(port) {
 /**
  * Read PID from file
  */
-function readPidFile() {
+function readPidFile(file = PID_FILE) {
   try {
-    if (fs.existsSync(PID_FILE)) {
-      const pid = parseInt(fs.readFileSync(PID_FILE, 'utf-8').trim(), 10);
+    if (fs.existsSync(file)) {
+      const pid = parseInt(fs.readFileSync(file, 'utf-8').trim(), 10);
       return pid;
     }
   } catch (e) {
@@ -181,7 +183,33 @@ function getProcessCommand(pid) {
 function isProjectProcess(pid, scriptPath, trustedPid = null) {
   const command = getProcessCommand(pid);
   if (command) {
-    return command.includes(scriptPath);
+    if (command.includes(scriptPath)) {
+      return true;
+    }
+    const normalized = command.replaceAll('\\', '/');
+    if (scriptPath.replaceAll('\\', '/').endsWith('/src/proxy/server.js')) {
+      return normalized.includes('/src/proxy/server.js') &&
+        (
+          normalized.includes('/claude-code-lens/') ||
+          normalized.includes('/claude-code-monitor/') ||
+          normalized.includes('/claude-code-reverse/')
+        );
+    }
+    return false;
+  }
+  return trustedPid !== null && parseInt(pid, 10) === parseInt(trustedPid, 10);
+}
+
+function isVisualizerProcess(pid, trustedPid = null) {
+  const command = getProcessCommand(pid);
+  if (command) {
+    const normalized = command.replaceAll('\\', '/');
+    return normalized.includes('/src/visualizer/server.js') &&
+      (
+        normalized.includes('/claude-code-lens/') ||
+        normalized.includes('/claude-code-monitor/') ||
+        normalized.includes('/claude-code-reverse/')
+      );
   }
   return trustedPid !== null && parseInt(pid, 10) === parseInt(trustedPid, 10);
 }
@@ -431,11 +459,12 @@ async function proxySubcommand() {
 
 async function stopSubcommand(silent = false) {
   if (!silent) {
-    printHeader('🛑 停止 Claude Code 反向代理服务器');
+    printHeader('🛑 停止 Claude Code Lens 后台服务');
   }
 
   const port = getPort();
   let stopped = false;
+  let proxyStopFailed = false;
 
   // Method 1: Stop via PID file
   const savedPid = readPidFile();
@@ -520,9 +549,7 @@ async function stopSubcommand(silent = false) {
   if (stillOccupied && stillOccupied.length > 0) {
     console.log(`${colors.red}❌ 停止失败,端口 ${port} 仍被占用${colors.reset}`);
     console.log(`${colors.yellow}   请检查占用进程后再手动处理: lsof -i :${port}${colors.reset}`);
-    if (!silent) {
-      process.exit(1);
-    }
+    proxyStopFailed = true;
   } else {
     if (stopped) {
       console.log(`${colors.green}✅ 代理服务器已完全停止${colors.reset}`);
@@ -532,6 +559,75 @@ async function stopSubcommand(silent = false) {
     if (!silent) {
       console.log('');
     }
+  }
+
+  await stopVisualizerProcess(silent);
+
+  if (proxyStopFailed && !silent) {
+    process.exit(1);
+  }
+}
+
+async function stopVisualizerProcess(silent = false) {
+  const visualizerPort = getVisualizerPort();
+  let stopped = false;
+  const pidFiles = [VISUALIZER_PID_FILE, LEGACY_VISUALIZER_PID_FILE];
+  const trustedPids = [];
+
+  for (const pidFile of pidFiles) {
+    const savedPid = readPidFile(pidFile);
+    if (!savedPid) continue;
+    trustedPids.push(savedPid);
+
+    if (isProcessRunning(savedPid) && isVisualizerProcess(savedPid, savedPid)) {
+      if (!silent) {
+        console.log(`${colors.yellow}📋 停止可视化服务进程 ${savedPid}...${colors.reset}`);
+      }
+      killProcess(savedPid, 'SIGTERM');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (isProcessRunning(savedPid)) {
+        killProcess(savedPid, 'SIGKILL');
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      if (!isProcessRunning(savedPid)) {
+        stopped = true;
+      }
+    }
+
+    try {
+      fs.unlinkSync(pidFile);
+    } catch (e) {
+      // Ignore errors
+    }
+  }
+
+  const pids = checkPortAvailability(visualizerPort) || [];
+  const visualizerPids = pids.filter(pid => (
+    isVisualizerProcess(pid) ||
+    trustedPids.some(savedPid => parseInt(pid, 10) === parseInt(savedPid, 10))
+  ));
+
+  if (visualizerPids.length > 0) {
+    if (!silent) {
+      console.log(`${colors.yellow}📋 检测到可视化端口 ${visualizerPort} 上仍有本项目服务: ${visualizerPids.join(', ')}${colors.reset}`);
+    }
+    for (const pid of visualizerPids) {
+      killProcess(parseInt(pid, 10), 'SIGTERM');
+    }
+    await new Promise(resolve => setTimeout(resolve, 800));
+    for (const pid of visualizerPids) {
+      if (isProcessRunning(parseInt(pid, 10))) {
+        killProcess(parseInt(pid, 10), 'SIGKILL');
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
+    stopped = true;
+  } else if (pids.length > 0 && !silent) {
+    console.log(`${colors.yellow}⚠️  可视化端口 ${visualizerPort} 被其他进程占用,已跳过${colors.reset}`);
+  }
+
+  if (!silent && stopped) {
+    console.log(`${colors.green}✅ 可视化服务已停止${colors.reset}`);
   }
 }
 
@@ -735,9 +831,24 @@ async function startVisualizer() {
 
   const pids = checkPortAvailability(visualizerPort);
   if (pids && pids.length > 0) {
-    console.log(`${colors.yellow}⚠️  可视化端口 ${visualizerPort} 已被占用,跳过启动${colors.reset}`);
-    console.log(`${colors.yellow}   占用进程: PID ${pids.join(', ')}${colors.reset}`);
-    return null;
+    const visualizerPids = pids.filter(pid => isVisualizerProcess(pid));
+    if (visualizerPids.length === 0) {
+      console.log(`${colors.yellow}⚠️  可视化端口 ${visualizerPort} 已被其他进程占用,跳过启动${colors.reset}`);
+      console.log(`${colors.yellow}   占用进程: PID ${pids.join(', ')}${colors.reset}`);
+      return null;
+    }
+
+    console.log(`${colors.yellow}⚠️  检测到旧的可视化服务占用端口 ${visualizerPort},正在重启...${colors.reset}`);
+    for (const pid of visualizerPids) {
+      killProcess(parseInt(pid, 10), 'SIGTERM');
+    }
+    await new Promise(resolve => setTimeout(resolve, 800));
+    for (const pid of visualizerPids) {
+      if (isProcessRunning(parseInt(pid, 10))) {
+        killProcess(parseInt(pid, 10), 'SIGKILL');
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   try {
