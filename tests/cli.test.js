@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -26,6 +26,15 @@ test('cclens help exposes the unified command surface', async () => {
   assert.match(stdout, /viz\s+Start\/open the browser log visualizer/);
   assert.match(stdout, /extract \[log-file\]\s+Extract prompts\/tools from a log file/);
   assert.match(stdout, /cclens proxy --help/);
+});
+
+test('cclens exposes its package version', async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repoRoot, 'package.json'), 'utf8'));
+  const { stdout } = await execFileAsync(process.execPath, [cliPath, '--version'], {
+    cwd: repoRoot
+  });
+
+  assert.equal(stdout.trim(), packageJson.version);
 });
 
 test('cclens passthrough uses the generated monitor settings file by default', () => {

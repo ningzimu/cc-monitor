@@ -125,6 +125,7 @@ cclens status
 
 ```bash
 cclens --help
+cclens --version
 cclens proxy --help
 cclens help proxy
 ```
@@ -140,6 +141,7 @@ cclens help proxy
 | `cclens viz` | 启动或打开日志可视化页面 | 只想查看已有日志，不想重新启动 Claude Code |
 | `cclens extract [log-file]` | 从日志提取 prompts 和 tools | 不传文件时读取最新日志；传文件时读取指定日志 |
 | `cclens config` | 输出最终生效配置 | 检查端口、上游 base URL、可视化端口等配置是否符合预期 |
+| `cclens --version` | 输出当前安装的 CLI 版本 | 确认本机正在使用哪个 npm 包版本 |
 
 一键启动时会自动打开可视化页面。设置 `CLAUDE_CODE_LENS_OPEN_BROWSER=false` 可以禁用自动打开浏览器。
 启动输出默认保持简洁。设置 `CLAUDE_CODE_LENS_VERBOSE=true` 可以打印 PID、日志路径和启动步骤等详细信息。

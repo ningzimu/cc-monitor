@@ -125,6 +125,7 @@ Every monitor subcommand has dedicated help:
 
 ```bash
 cclens --help
+cclens --version
 cclens proxy --help
 cclens help proxy
 ```
@@ -140,6 +141,7 @@ Command reference:
 | `cclens viz` | Starts/opens the log visualizer | Inspect existing logs without launching Claude Code |
 | `cclens extract [log-file]` | Extracts prompts and tools from logs | Uses the newest log by default, or a specific file when provided |
 | `cclens config` | Prints the resolved config | Verify ports, target base URL, visualizer settings, and env overrides |
+| `cclens --version` | Prints the installed CLI version | Confirm which npm package version is currently installed |
 
 The visualizer opens automatically during one-click startup. Set `CLAUDE_CODE_LENS_OPEN_BROWSER=false` to disable that behavior.
 Startup output is intentionally brief. Set `CLAUDE_CODE_LENS_VERBOSE=true` to print process IDs, log paths, and startup steps.

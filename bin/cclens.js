@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import { Command } from 'commander';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 import {
   startAll,
   startProxy,
@@ -17,12 +18,22 @@ const rootDir = join(__dirname, '..');
 
 const commands = new Set(['proxy', 'stop', 'status', 'viz', 'extract', 'config', 'help']);
 
+function getPackageVersion() {
+  try {
+    const packageJson = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8'));
+    return packageJson.version || '0.0.0';
+  } catch (error) {
+    return '0.0.0';
+  }
+}
+
 function createHelpProgram() {
   const program = new Command();
 
   program
     .name('cclens')
     .description('Local monitor for Claude Code API traffic, logs, prompts, and tools.')
+    .version(getPackageVersion(), '-v, --version', 'display version number')
     .usage('[claude args...]')
     .helpCommand(false)
     .showHelpAfterError()
@@ -259,6 +270,11 @@ async function main() {
 
   if (first === '--help' || first === '-h' || first === 'help') {
     showCommandHelp(args[1]);
+    return;
+  }
+
+  if (first === '--version' || first === '-v' || first === '-V') {
+    console.log(getPackageVersion());
     return;
   }
 
