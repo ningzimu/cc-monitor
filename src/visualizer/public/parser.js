@@ -1,6 +1,6 @@
 /**
  * Parse JSON log file into structured output
- * Only supports JSON format from ~/.claude-code-monitor/raw_logs/
+ * Only supports JSON format from ~/.claude-code-lens/raw_logs/
  * 
  * @param {string} rawLogString - The raw log content as a string (JSON format)
  * @returns {Object} Parsed and structured log data

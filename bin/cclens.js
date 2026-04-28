@@ -21,7 +21,7 @@ function createHelpProgram() {
   const program = new Command();
 
   program
-    .name('cc-monitor')
+    .name('cclens')
     .description('Local monitor for Claude Code API traffic, logs, prompts, and tools.')
     .usage('[claude args...]')
     .helpCommand(false)
@@ -31,27 +31,27 @@ function createHelpProgram() {
     .addHelpText('after', `
 Recommended modes:
   One-off debug:
-    cc-monitor -p "hello"
-    cc-monitor --resume
+    cclens -p "hello"
+    cclens --resume
 
   Long-running proxy:
-    cc-monitor proxy
-    claude --settings ~/.claude-code-monitor/settings.json
-    cc-monitor viz
+    cclens proxy
+    claude --settings ~/.claude-code-lens/settings.json
+    cclens viz
 
 Claude Code passthrough:
-  cc-monitor
-  cc-monitor -p "hello"
-  cc-monitor --resume
-  cc-monitor --model claude-opus-4-6 --resume
+  cclens
+  cclens -p "hello"
+  cclens --resume
+  cclens --model claude-opus-4-6 --resume
 
 Command help:
-  cc-monitor proxy --help
-  cc-monitor help proxy
+  cclens proxy --help
+  cclens help proxy
 
 Config:
-  ~/.claude-code-monitor/config.json
-  Environment overrides use the CLAUDE_MONITOR_* prefix.
+  ~/.claude-code-lens/config.json
+  Environment overrides use the CLAUDE_CODE_LENS_* prefix.
 `);
 
   program
@@ -69,28 +69,28 @@ When to use:
 Behavior:
   - Listens on proxy.host/proxy.port from config, default http://localhost:18888
   - Forwards traffic to the discovered or configured target.baseUrl
-  - Writes API logs to ~/.claude-code-monitor/raw_logs/
-  - Writes process logs to ~/.claude-code-monitor/logs/proxy-server.log
-  - Creates ~/.claude-code-monitor/settings.json for Claude Code
+  - Writes API logs to ~/.claude-code-lens/raw_logs/
+  - Writes process logs to ~/.claude-code-lens/logs/proxy-server.log
+  - Creates ~/.claude-code-lens/settings.json for Claude Code
 
 Next steps:
   Start Claude Code through the generated settings file:
-    claude --settings ~/.claude-code-monitor/settings.json
+    claude --settings ~/.claude-code-lens/settings.json
 
   Or configure only the current shell session:
     ANTHROPIC_BASE_URL=http://localhost:18888 claude
 
   Open the monitor UI:
-    cc-monitor viz
+    cclens viz
 
 Examples:
-  cc-monitor proxy
-  CLAUDE_MONITOR_PROXY_PORT=18889 cc-monitor proxy
+  cclens proxy
+  CLAUDE_CODE_LENS_PROXY_PORT=18889 cclens proxy
 
 Related:
-  cc-monitor status
-  cc-monitor stop
-  cc-monitor config
+  cclens status
+  cclens stop
+  cclens config
 `);
 
   program
@@ -101,16 +101,16 @@ What it does:
   Stops monitor-managed background services.
 
 Behavior:
-  - Stops the proxy process recorded in ~/.claude-code-monitor/logs/proxy.pid
+  - Stops the proxy process recorded in ~/.claude-code-lens/logs/proxy.pid
   - Verifies that the configured proxy port is no longer occupied by this proxy
   - Does not kill unrelated processes that happen to use the same port
 
 Examples:
-  cc-monitor stop
+  cclens stop
 
 Related:
-  cc-monitor status
-  cc-monitor proxy
+  cclens status
+  cclens proxy
 `);
 
   program
@@ -127,12 +127,12 @@ Output includes:
   - Current port owner from lsof when available
 
 Examples:
-  cc-monitor status
-  CLAUDE_MONITOR_PROXY_PORT=18889 cc-monitor status
+  cclens status
+  CLAUDE_CODE_LENS_PROXY_PORT=18889 cclens status
 
 Related:
-  cc-monitor proxy
-  cc-monitor stop
+  cclens proxy
+  cclens stop
 `);
 
   program
@@ -144,21 +144,21 @@ What it does:
 
 Behavior:
   - Serves the visualizer from http://127.0.0.1:5500 by default
-  - Reads log files from ~/.claude-code-monitor/raw_logs/
+  - Reads log files from ~/.claude-code-lens/raw_logs/
   - Watches for log changes and refreshes the UI in real time
   - Does not start the proxy or Claude Code
 
 Configuration:
-  Set visualizer.port in ~/.claude-code-monitor/config.json, or use
-  CLAUDE_MONITOR_VISUALIZER_PORT.
+  Set visualizer.port in ~/.claude-code-lens/config.json, or use
+  CLAUDE_CODE_LENS_VISUALIZER_PORT.
 
 Examples:
-  cc-monitor viz
-  CLAUDE_MONITOR_VISUALIZER_PORT=5501 cc-monitor viz
+  cclens viz
+  CLAUDE_CODE_LENS_VISUALIZER_PORT=5501 cclens viz
 
 Related:
-  cc-monitor
-  cc-monitor proxy
+  cclens
+  cclens proxy
 `);
 
   program
@@ -170,16 +170,16 @@ What it does:
   Extracts system prompts and tool definitions from Claude Code API logs.
 
 Behavior:
-  - With no file argument, reads the newest file in ~/.claude-code-monitor/raw_logs/
+  - With no file argument, reads the newest file in ~/.claude-code-lens/raw_logs/
   - With a file argument, reads that specific JSON log file
-  - Writes extracted data to ~/.claude-code-monitor/prompts/
+  - Writes extracted data to ~/.claude-code-lens/prompts/
 
 Examples:
-  cc-monitor extract
-  cc-monitor extract ~/.claude-code-monitor/raw_logs/messages-xxx.json
+  cclens extract
+  cclens extract ~/.claude-code-lens/raw_logs/messages-xxx.json
 
 Related:
-  cc-monitor viz
+  cclens viz
 `);
 
   program
@@ -190,8 +190,8 @@ What it does:
   Prints the final resolved monitor configuration as JSON.
 
 Resolution order:
-  1. CLAUDE_MONITOR_* environment variables
-  2. ~/.claude-code-monitor/config.json
+  1. CLAUDE_CODE_LENS_* environment variables
+  2. ~/.claude-code-lens/config.json
   3. Claude Code settings target discovery
   4. Built-in defaults
 
@@ -203,12 +203,12 @@ Common fields:
   logging.enableConsole
 
 Examples:
-  cc-monitor config
-  CLAUDE_MONITOR_PROXY_PORT=18889 cc-monitor config
+  cclens config
+  CLAUDE_CODE_LENS_PROXY_PORT=18889 cclens config
 
 Related:
-  cc-monitor proxy
-  cc-monitor viz
+  cclens proxy
+  cclens viz
 `);
 
   program

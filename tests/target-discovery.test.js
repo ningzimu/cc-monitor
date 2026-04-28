@@ -12,7 +12,7 @@ test('target discovery prefers explicit monitor configuration sources', async ()
 
   const result = resolveTargetBaseUrl({
     env: {
-      CLAUDE_MONITOR_TARGET_BASE_URL: 'https://target.example.com',
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://target.example.com',
       ANTHROPIC_BASE_URL: 'https://anthropic-env.example.com'
     },
     userConfig: {
@@ -27,7 +27,7 @@ test('target discovery prefers explicit monitor configuration sources', async ()
 
   assert.deepEqual(result, {
     baseUrl: 'https://target.example.com',
-    source: 'env:CLAUDE_MONITOR_TARGET_BASE_URL'
+    source: 'env:CLAUDE_CODE_LENS_TARGET_BASE_URL'
   });
 });
 

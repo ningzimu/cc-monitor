@@ -171,9 +171,9 @@ test('proxy preserves query strings and filters upstream length headers', async 
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_PROXY_PORT: String(proxyPort),
-      CLAUDE_MONITOR_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_PROXY_PORT: String(proxyPort),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
   t.after(() => child.kill('SIGTERM'));
@@ -216,9 +216,9 @@ test('proxy groups logs by JSON metadata session_id', async (t) => {
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_PROXY_PORT: String(proxyPort),
-      CLAUDE_MONITOR_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_PROXY_PORT: String(proxyPort),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
   t.after(() => child.kill('SIGTERM'));
@@ -284,9 +284,9 @@ test('proxy discovers target base URL from Claude Code project settings', async 
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_PROXY_PORT: String(proxyPort),
-      CLAUDE_MONITOR_TARGET_BASE_URL: '',
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_PROXY_PORT: String(proxyPort),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: '',
       ANTHROPIC_BASE_URL: ''
     }
   });
@@ -372,9 +372,9 @@ test('proxy preserves streamed tool_use blocks when SSE events are split across 
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_PROXY_PORT: String(proxyPort),
-      CLAUDE_MONITOR_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_PROXY_PORT: String(proxyPort),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
   t.after(() => child.kill('SIGTERM'));

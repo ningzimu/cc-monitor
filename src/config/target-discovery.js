@@ -108,8 +108,8 @@ export function resolveTargetBaseUrl(options = {}) {
 
   return firstUsableBaseUrl([
     {
-      baseUrl: readEnv(env, 'CLAUDE_MONITOR_TARGET_BASE_URL'),
-      source: 'env:CLAUDE_MONITOR_TARGET_BASE_URL'
+      baseUrl: readEnv(env, 'CLAUDE_CODE_LENS_TARGET_BASE_URL'),
+      source: 'env:CLAUDE_CODE_LENS_TARGET_BASE_URL'
     },
     {
       baseUrl: userConfig?.target?.baseUrl,

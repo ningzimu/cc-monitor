@@ -354,14 +354,14 @@ app.all('*', proxyRequest);
 // 启动服务器
 const server = app.listen(config.proxy.port, config.proxy.host, () => {
   console.log('');
-  console.log('🚀 Claude Code Monitor proxy started');
+  console.log('🚀 Claude Code Lens proxy started');
   console.log('');
   console.log(`📡 监听地址: http://${config.proxy.host}:${config.proxy.port}`);
   console.log(`🎯 转发目标: ${config.target.baseUrl}`);
-  console.log(`📝 日志路径: ~/.claude-code-monitor/raw_logs/`);
+  console.log(`📝 日志路径: ~/.claude-code-lens/raw_logs/`);
   console.log('');
   console.log('💡 使用方法:');
-  console.log(`   claude --settings ~/.claude-code-monitor/settings.json`);
+  console.log(`   claude --settings ~/.claude-code-lens/settings.json`);
   console.log('');
 });
 

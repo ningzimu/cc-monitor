@@ -29,8 +29,8 @@ const PROJECT_ROOT = join(__dirname, '..', '..');
 const serverPath = join(PROJECT_ROOT, 'src', 'proxy', 'server.js');
 const visualizerPath = join(PROJECT_ROOT, 'src', 'visualizer', 'server.js');
 
-const APP_HOME = process.env.CLAUDE_MONITOR_HOME ||
-  path.join(os.homedir(), '.claude-code-monitor');
+const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
+  path.join(os.homedir(), '.claude-code-lens');
 const APP_LOG_DIR = path.join(APP_HOME, 'logs');
 const PID_FILE = path.join(APP_LOG_DIR, 'proxy.pid');
 const VISUALIZER_PID_FILE = path.join(APP_LOG_DIR, 'visualizer.pid');
@@ -39,7 +39,7 @@ const VISUALIZER_LOG_FILE = path.join(APP_LOG_DIR, 'visualizer.log');
 const USER_CONFIG_FILE = path.join(APP_HOME, 'config.json');
 const SETTINGS_FILE = path.join(APP_HOME, 'settings.json');
 const MONITOR_VERBOSE = ['1', 'true', 'yes', 'on'].includes(
-  String(process.env.CLAUDE_MONITOR_VERBOSE || '').toLowerCase()
+  String(process.env.CLAUDE_CODE_LENS_VERBOSE || '').toLowerCase()
 );
 
 // Check if server file exists
@@ -76,7 +76,7 @@ function askQuestion(question) {
  */
 function getPort() {
   // 1. 优先使用环境变量 (用于 server 子进程)
-  const envPort = readEnv(process.env, 'CLAUDE_MONITOR_PROXY_PORT');
+  const envPort = readEnv(process.env, 'CLAUDE_CODE_LENS_PROXY_PORT');
   if (envPort) {
     return parseInteger(envPort, 18888);
   }
@@ -111,7 +111,7 @@ function readUserConfig() {
 function getVisualizerPort() {
   const config = readUserConfig();
   return parseInteger(
-    readEnv(process.env, 'CLAUDE_MONITOR_VISUALIZER_PORT'),
+    readEnv(process.env, 'CLAUDE_CODE_LENS_VISUALIZER_PORT'),
     parseInteger(config?.visualizer?.port, 5500)
   );
 }
@@ -252,7 +252,7 @@ function waitForHttp(url, timeoutMs = 5000) {
 }
 
 function openBrowser(url) {
-  if (process.env.CLAUDE_MONITOR_OPEN_BROWSER === 'false') {
+  if (process.env.CLAUDE_CODE_LENS_OPEN_BROWSER === 'false') {
     return false;
   }
 
@@ -343,7 +343,7 @@ async function proxySubcommand() {
   if (remainingPids && remainingPids.length > 0) {
     console.error(`${colors.red}❌ 端口 ${port} 仍被占用,未启动代理服务器${colors.reset}`);
     console.error(`${colors.yellow}   占用进程: PID ${remainingPids.join(', ')}${colors.reset}`);
-    console.error(`${colors.yellow}   为避免误杀其他程序,请先释放端口或修改 ~/.claude-code-monitor/config.json 中的 proxy.port${colors.reset}`);
+    console.error(`${colors.yellow}   为避免误杀其他程序,请先释放端口或修改 ~/.claude-code-lens/config.json 中的 proxy.port${colors.reset}`);
     process.exit(1);
   }
 
@@ -364,8 +364,8 @@ async function proxySubcommand() {
     stdio: ['ignore', logFile, logFile],
     env: {
       ...process.env,
-      CLAUDE_MONITOR_PROXY_PORT: port.toString(),
-      CLAUDE_MONITOR_TARGET_BASE_URL: target.baseUrl
+      CLAUDE_CODE_LENS_PROXY_PORT: port.toString(),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: target.baseUrl
     }
   });
 
@@ -393,7 +393,7 @@ async function proxySubcommand() {
     console.log('');
     printHeader('💡 配置 Claude Code 使用代理');
     console.log(`${colors.cyan}方式 1: 使用 --settings 参数${colors.reset} ${colors.yellow}(推荐,配置文件已创建)${colors.reset}`);
-    console.log(`   ${colors.green}claude --settings ~/.claude-code-monitor/settings.json${colors.reset}`);
+    console.log(`   ${colors.green}claude --settings ~/.claude-code-lens/settings.json${colors.reset}`);
     console.log('');
     console.log(`${colors.cyan}方式 2: 修改用户级配置${colors.reset} ${colors.yellow}(全局生效,所有项目)${colors.reset}`);
     console.log(`   编辑文件: ${colors.blue}~/.claude/settings.json${colors.reset}`);
@@ -410,8 +410,8 @@ async function proxySubcommand() {
     console.log('');
     printHeader('📋 管理命令');
     console.log(`   查看实时日志: ${colors.green}tail -f ${LOG_FILE}${colors.reset}`);
-    console.log(`   停止代理:     ${colors.green}cc-monitor stop${colors.reset}`);
-    console.log(`   查看状态:     ${colors.green}cc-monitor status${colors.reset}`);
+    console.log(`   停止代理:     ${colors.green}cclens stop${colors.reset}`);
+    console.log(`   查看状态:     ${colors.green}cclens status${colors.reset}`);
     console.log('');
   } else {
     console.log(`${colors.red}❌ 代理服务器启动失败${colors.reset}`);
@@ -603,12 +603,12 @@ async function statusSubcommand() {
 
   if (running) {
     console.log(`${colors.cyan}💡 管理命令:${colors.reset}`);
-    console.log(`   停止: ${colors.green}cc-monitor stop${colors.reset}`);
-    console.log(`   重启: ${colors.green}cc-monitor proxy${colors.reset} (会提示是否重启)`);
+    console.log(`   停止: ${colors.green}cclens stop${colors.reset}`);
+    console.log(`   重启: ${colors.green}cclens proxy${colors.reset} (会提示是否重启)`);
     console.log(`   日志: ${colors.green}tail -f ${LOG_FILE}${colors.reset}`);
   } else {
     console.log(`${colors.cyan}💡 启动命令:${colors.reset}`);
-    console.log(`   ${colors.green}cc-monitor proxy${colors.reset}`);
+    console.log(`   ${colors.green}cclens proxy${colors.reset}`);
   }
   console.log('');
 }
@@ -697,8 +697,8 @@ function startProxyServer(port, targetBaseUrl) {
     stdio: ['ignore', logFile, logFile],
     env: {
       ...process.env,
-      CLAUDE_MONITOR_PROXY_PORT: port.toString(),
-      ...(targetBaseUrl ? { CLAUDE_MONITOR_TARGET_BASE_URL: targetBaseUrl } : {})
+      CLAUDE_CODE_LENS_PROXY_PORT: port.toString(),
+      ...(targetBaseUrl ? { CLAUDE_CODE_LENS_TARGET_BASE_URL: targetBaseUrl } : {})
     }
   });
 
@@ -748,8 +748,8 @@ async function startVisualizer() {
       stdio: ['ignore', logFile, logFile],
       env: {
         ...process.env,
-        CLAUDE_MONITOR_VISUALIZER_BACKGROUND: 'true',
-        CLAUDE_MONITOR_VISUALIZER_PORT: visualizerPort.toString()
+        CLAUDE_CODE_LENS_VISUALIZER_BACKGROUND: 'true',
+        CLAUDE_CODE_LENS_VISUALIZER_PORT: visualizerPort.toString()
       }
     });
 
@@ -1009,7 +1009,7 @@ async function defaultStartup(claudeExtraArgs) {
       if (vizInfo) {
         monitorLog(`${colors.green}Visualizer:${colors.reset} ${vizInfo.url}`);
       }
-      monitorLog(`${colors.blue}Details:${colors.reset} cc-monitor status`);
+      monitorLog(`${colors.blue}Details:${colors.reset} cclens status`);
       monitorLog('');
     }
 

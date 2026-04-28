@@ -11,7 +11,7 @@ import test from 'node:test';
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(__dirname, '..');
-const cliPath = path.join(repoRoot, 'bin', 'cc-monitor.js');
+const cliPath = path.join(repoRoot, 'bin', 'cclens.js');
 
 function hasLsof() {
   try {
@@ -42,7 +42,7 @@ async function assertServerAlive(port) {
   assert.equal(await response.text(), 'pong');
 }
 
-test('cc-monitor stop does not kill an unrelated process on the configured port', async (t) => {
+test('cclens stop does not kill an unrelated process on the configured port', async (t) => {
   if (!hasLsof()) {
     t.skip('lsof is required for this CLI behavior');
     return;
@@ -60,7 +60,7 @@ test('cc-monitor stop does not kill an unrelated process on the configured port'
   const port = await listen(server);
   t.after(() => closeServer(server));
 
-  const monitorHome = await mkdtemp(path.join(os.tmpdir(), 'cc-monitor-stop-test-'));
+  const monitorHome = await mkdtemp(path.join(os.tmpdir(), 'cclens-stop-test-'));
   t.after(() => rm(monitorHome, { recursive: true, force: true }));
 
   let result;
@@ -69,8 +69,8 @@ test('cc-monitor stop does not kill an unrelated process on the configured port'
       cwd: repoRoot,
       env: {
         ...process.env,
-        CLAUDE_MONITOR_HOME: monitorHome,
-        CLAUDE_MONITOR_PROXY_PORT: String(port)
+        CLAUDE_CODE_LENS_HOME: monitorHome,
+        CLAUDE_CODE_LENS_PROXY_PORT: String(port)
       }
     });
   } catch (error) {

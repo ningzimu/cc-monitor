@@ -4,11 +4,14 @@ import os from 'os';
 import { parseBoolean, parseInteger, readEnv } from '../config/env.js';
 import { DEFAULT_TARGET_BASE_URL, resolveTargetBaseUrl } from '../config/target-discovery.js';
 
-export const APP_HOME = process.env.CLAUDE_MONITOR_HOME ||
-  path.join(os.homedir(), '.claude-code-monitor');
+export const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
+  path.join(os.homedir(), '.claude-code-lens');
 export const USER_CONFIG_PATH = path.join(APP_HOME, 'config.json');
 
 const defaultConfig = {
+  app: {
+    home: APP_HOME
+  },
   proxy: {
     host: '0.0.0.0',
     port: 18888
@@ -65,8 +68,8 @@ function applyEnvironmentOverrides(config, userConfig) {
 
   next.proxy = {
     ...next.proxy,
-    host: readEnv(process.env, 'CLAUDE_MONITOR_PROXY_HOST') || next.proxy.host,
-    port: parseInteger(readEnv(process.env, 'CLAUDE_MONITOR_PROXY_PORT'), next.proxy.port)
+    host: readEnv(process.env, 'CLAUDE_CODE_LENS_PROXY_HOST') || next.proxy.host,
+    port: parseInteger(readEnv(process.env, 'CLAUDE_CODE_LENS_PROXY_PORT'), next.proxy.port)
   };
 
   next.target = {
@@ -78,18 +81,18 @@ function applyEnvironmentOverrides(config, userConfig) {
       userConfig,
       proxyPort: next.proxy.port
     }).baseUrl,
-    timeout: parseInteger(readEnv(process.env, 'CLAUDE_MONITOR_TARGET_TIMEOUT'), next.target.timeout)
+    timeout: parseInteger(readEnv(process.env, 'CLAUDE_CODE_LENS_TARGET_TIMEOUT'), next.target.timeout)
   };
 
   next.visualizer = {
     ...next.visualizer,
-    host: readEnv(process.env, 'CLAUDE_MONITOR_VISUALIZER_HOST') || next.visualizer.host,
-    port: parseInteger(readEnv(process.env, 'CLAUDE_MONITOR_VISUALIZER_PORT'), next.visualizer.port)
+    host: readEnv(process.env, 'CLAUDE_CODE_LENS_VISUALIZER_HOST') || next.visualizer.host,
+    port: parseInteger(readEnv(process.env, 'CLAUDE_CODE_LENS_VISUALIZER_PORT'), next.visualizer.port)
   };
 
   next.logging = {
     ...next.logging,
-    enableConsole: parseBoolean(readEnv(process.env, 'CLAUDE_MONITOR_LOGGING_ENABLE_CONSOLE'), next.logging.enableConsole)
+    enableConsole: parseBoolean(readEnv(process.env, 'CLAUDE_CODE_LENS_LOGGING_ENABLE_CONSOLE'), next.logging.enableConsole)
   };
 
   return next;

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Prompt extraction implementation used by cc-monitor extract.
+ * Prompt extraction implementation used by cclens extract.
  * Extract prompts and tools from Claude Code API logs
  */
 
@@ -46,19 +46,19 @@ function print(message, color = '') {
  */
 function showHelp() {
   console.log(`
-${colors.bold}cc-monitor extract${colors.reset} - 从 Claude Code 日志中提取 Prompts 和 Tools
+${colors.bold}cclens extract${colors.reset} - 从 Claude Code 日志中提取 Prompts 和 Tools
 
 ${colors.cyan}用法:${colors.reset}
-  cc-monitor extract              从最新日志提取
-  cc-monitor extract <file>       从指定文件提取
-  cc-monitor extract --help       显示帮助信息
+  cclens extract              从最新日志提取
+  cclens extract <file>       从指定文件提取
+  cclens extract --help       显示帮助信息
 
 ${colors.cyan}输出:${colors.reset}
-  文件保存到 ~/.claude-code-monitor/prompts/cc-prompts-{timestamp}.json
+  文件保存到 ~/.claude-code-lens/prompts/cclens-prompts-{timestamp}.json
 
 ${colors.cyan}示例:${colors.reset}
-  cc-monitor extract
-  cc-monitor extract ~/path/to/messages-20251209_220351-xxx.json
+  cclens extract
+  cclens extract ~/path/to/messages-20251209_220351-xxx.json
 `);
 }
 
@@ -69,9 +69,9 @@ function showNoLogError() {
   print('\n❌ 未找到日志文件', 'red');
   console.log(`
 ${colors.yellow}💡 如何生成日志:${colors.reset}
-   1. 运行 ${colors.green}cc-monitor${colors.reset} 启动代理服务器
+   1. 运行 ${colors.green}cclens${colors.reset} 启动代理服务器
    2. 使用 Claude Code 进行对话
-   3. 日志将自动保存到 ${colors.cyan}~/.claude-code-monitor/raw_logs/${colors.reset}
+   3. 日志将自动保存到 ${colors.cyan}~/.claude-code-lens/raw_logs/${colors.reset}
 `);
 }
 

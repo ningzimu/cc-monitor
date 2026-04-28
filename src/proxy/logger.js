@@ -3,8 +3,8 @@ import path from 'path';
 import os from 'os';
 
 // JSON log directory - unified storage location
-const APP_HOME = process.env.CLAUDE_MONITOR_HOME ||
-  path.join(os.homedir(), '.claude-code-monitor');
+const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
+  path.join(os.homedir(), '.claude-code-lens');
 const LOG_DIR = path.join(APP_HOME, 'raw_logs');
 
 /**

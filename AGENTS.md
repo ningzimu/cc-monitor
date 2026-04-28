@@ -1,6 +1,6 @@
 please reply in chinese
 
-# Claude Code Monitor
+# Claude Code Lens
 
 This repository builds a local observability tool for Claude Code API traffic.
 
@@ -11,30 +11,30 @@ Use **Superpowers** workflows for feature work, debugging, TDD, verification, an
 The public CLI is a single npm-managed command:
 
 ```bash
-cc-monitor
+cclens
 ```
 
 Primary subcommands:
 
 ```bash
-cc-monitor            # proxy + visualizer + Claude Code
-cc-monitor -p "hello" # pass Claude Code args through
-cc-monitor proxy      # proxy only
-cc-monitor stop       # stop proxy
-cc-monitor status     # proxy status
-cc-monitor viz        # visualizer
-cc-monitor extract    # prompt/tool extraction
-cc-monitor config     # print resolved config
+cclens            # proxy + visualizer + Claude Code
+cclens -p "hello" # pass Claude Code args through
+cclens proxy      # proxy only
+cclens stop       # stop proxy
+cclens status     # proxy status
+cclens viz        # visualizer
+cclens extract    # prompt/tool extraction
+cclens config     # print resolved config
 ```
 
-Avoid introducing new top-level command prefixes. Keep `cc-monitor` as the only documented CLI prefix.
+Avoid introducing new top-level command prefixes. Keep `cclens` as the only documented CLI prefix.
 
 ## Runtime Paths
 
 User-level runtime data lives in:
 
 ```text
-~/.claude-code-monitor/
+~/.claude-code-lens/
   config.json
   settings.json
   logs/
@@ -42,13 +42,13 @@ User-level runtime data lives in:
   prompts/
 ```
 
-Do not write private endpoint configuration into the repository. Use `~/.claude-code-monitor/config.json` or environment variables.
+Do not write private endpoint configuration into the repository. Use `~/.claude-code-lens/config.json` or environment variables.
 
 Configuration priority:
 
 ```text
-CLAUDE_MONITOR_* environment variables
-> ~/.claude-code-monitor/config.json
+CLAUDE_CODE_LENS_* environment variables
+> ~/.claude-code-lens/config.json
 > Claude Code settings target discovery
 > built-in defaults
 ```
@@ -56,15 +56,15 @@ CLAUDE_MONITOR_* environment variables
 Supported overrides:
 
 ```bash
-CLAUDE_MONITOR_HOME=~/.claude-code-monitor
-CLAUDE_MONITOR_PROXY_HOST=127.0.0.1
-CLAUDE_MONITOR_PROXY_PORT=18888
-CLAUDE_MONITOR_TARGET_BASE_URL=https://api.anthropic.com
-CLAUDE_MONITOR_TARGET_TIMEOUT=120000
-CLAUDE_MONITOR_VISUALIZER_PORT=5500
-CLAUDE_MONITOR_LOGGING_ENABLE_CONSOLE=true
-CLAUDE_MONITOR_OPEN_BROWSER=false
-CLAUDE_MONITOR_VERBOSE=true
+CLAUDE_CODE_LENS_HOME=~/.claude-code-lens
+CLAUDE_CODE_LENS_PROXY_HOST=127.0.0.1
+CLAUDE_CODE_LENS_PROXY_PORT=18888
+CLAUDE_CODE_LENS_TARGET_BASE_URL=https://api.anthropic.com
+CLAUDE_CODE_LENS_TARGET_TIMEOUT=120000
+CLAUDE_CODE_LENS_VISUALIZER_PORT=5500
+CLAUDE_CODE_LENS_LOGGING_ENABLE_CONSOLE=true
+CLAUDE_CODE_LENS_OPEN_BROWSER=false
+CLAUDE_CODE_LENS_VERBOSE=true
 ```
 
 ## Development

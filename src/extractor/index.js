@@ -9,8 +9,8 @@ import path from 'path';
 import os from 'os';
 
 // Default paths
-const APP_HOME = process.env.CLAUDE_MONITOR_HOME ||
-  path.join(os.homedir(), '.claude-code-monitor');
+const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
+  path.join(os.homedir(), '.claude-code-lens');
 const DEFAULT_LOG_DIR = path.join(APP_HOME, 'raw_logs');
 const DEFAULT_OUTPUT_DIR = path.join(APP_HOME, 'prompts');
 
@@ -164,7 +164,7 @@ export function extractFromLog(logFilePath) {
  */
 export function generateOutputFilename(inputFilePath) {
   const timestamp = extractTimestamp(inputFilePath);
-  return `cc-prompts-${timestamp}.json`;
+  return `cclens-prompts-${timestamp}.json`;
 }
 
 /**

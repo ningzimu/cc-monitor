@@ -12,15 +12,15 @@ import { parseInteger, readEnv } from '../config/env.js';
 
 // Check if running as background server
 const IS_BACKGROUND_SERVER = (
-  readEnv(process.env, 'CLAUDE_MONITOR_VISUALIZER_BACKGROUND') === 'true'
+  readEnv(process.env, 'CLAUDE_CODE_LENS_VISUALIZER_BACKGROUND') === 'true'
 );
 
 // Log directory - unified location in user home
-const APP_HOME = process.env.CLAUDE_MONITOR_HOME ||
-  join(homedir(), '.claude-code-monitor');
+const APP_HOME = process.env.CLAUDE_CODE_LENS_HOME ||
+  join(homedir(), '.claude-code-lens');
 
 function readVisualizerPort() {
-  const envPort = readEnv(process.env, 'CLAUDE_MONITOR_VISUALIZER_PORT');
+  const envPort = readEnv(process.env, 'CLAUDE_CODE_LENS_VISUALIZER_PORT');
   if (envPort) {
     return parseInteger(envPort, 5500);
   }
@@ -239,7 +239,7 @@ async function startBuiltinServer() {
       return;
     }
 
-    // Handle API for logs - return JSON files from ~/.claude-code-monitor/raw_logs/
+    // Handle API for logs - return JSON files from ~/.claude-code-lens/raw_logs/
     if (req.url === '/api/logs') {
       try {
         // Ensure directory exists
@@ -387,8 +387,8 @@ async function main() {
       stdio: 'ignore',
       env: {
         ...process.env,
-        CLAUDE_MONITOR_VISUALIZER_BACKGROUND: 'true',
-        CLAUDE_MONITOR_VISUALIZER_PORT: PORT.toString()
+        CLAUDE_CODE_LENS_VISUALIZER_BACKGROUND: 'true',
+        CLAUDE_CODE_LENS_VISUALIZER_PORT: PORT.toString()
       }
     });
 

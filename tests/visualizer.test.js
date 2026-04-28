@@ -64,9 +64,9 @@ test('visualizer server reads port from monitor config', async (t) => {
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_VISUALIZER_BACKGROUND: 'true',
-      CLAUDE_MONITOR_VISUALIZER_PORT: ''
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_VISUALIZER_BACKGROUND: 'true',
+      CLAUDE_CODE_LENS_VISUALIZER_PORT: ''
     }
   });
   t.after(() => child.kill('SIGTERM'));
@@ -93,9 +93,9 @@ test('visualizer log API sorts files by modified time descending', async (t) => 
     stdio: 'ignore',
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_VISUALIZER_BACKGROUND: 'true',
-      CLAUDE_MONITOR_VISUALIZER_PORT: String(port)
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_VISUALIZER_BACKGROUND: 'true',
+      CLAUDE_CODE_LENS_VISUALIZER_PORT: String(port)
     }
   });
   t.after(() => child.kill('SIGTERM'));

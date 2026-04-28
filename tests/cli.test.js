@@ -10,21 +10,21 @@ import test from 'node:test';
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(__dirname, '..');
-const cliPath = path.join(repoRoot, 'bin', 'cc-monitor.js');
+const cliPath = path.join(repoRoot, 'bin', 'cclens.js');
 
-test('cc-monitor help exposes the unified command surface', async () => {
+test('cclens help exposes the unified command surface', async () => {
   const { stdout } = await execFileAsync(process.execPath, [cliPath, '--help'], {
     cwd: repoRoot
   });
 
-  assert.doesNotMatch(stdout, /cc-monitor start/);
-  assert.match(stdout, /cc-monitor -p "hello"/);
-  assert.match(stdout, /cc-monitor --resume/);
+  assert.doesNotMatch(stdout, /cclens start/);
+  assert.match(stdout, /cclens -p "hello"/);
+  assert.match(stdout, /cclens --resume/);
   assert.match(stdout, /Claude Code passthrough/);
   assert.match(stdout, /proxy\s+Start only the local API proxy/);
   assert.match(stdout, /viz\s+Start\/open the browser log visualizer/);
   assert.match(stdout, /extract \[log-file\]\s+Extract prompts\/tools from a log file/);
-  assert.match(stdout, /cc-monitor proxy --help/);
+  assert.match(stdout, /cclens proxy --help/);
 });
 
 test('monitor subcommands provide detailed help', async () => {
@@ -32,7 +32,7 @@ test('monitor subcommands provide detailed help', async () => {
     ['proxy', /Starts only the local Anthropic-compatible proxy/],
     ['stop', /Does not kill unrelated processes/],
     ['status', /Current port owner from lsof/],
-    ['viz', /Reads log files from ~\/.claude-code-monitor\/raw_logs\//],
+    ['viz', /Reads log files from ~\/.claude-code-lens\/raw_logs\//],
     ['extract', /With no file argument, reads the newest file/],
     ['config', /Resolution order:/]
   ];
@@ -41,28 +41,28 @@ test('monitor subcommands provide detailed help', async () => {
     const { stdout } = await execFileAsync(process.execPath, [cliPath, command, '--help'], {
       cwd: repoRoot
     });
-    assert.match(stdout, new RegExp(`Usage: cc-monitor ${command}`));
+    assert.match(stdout, new RegExp(`Usage: cclens ${command}`));
     assert.match(stdout, expected);
   }
 });
 
-test('cc-monitor help <command> shows command help', async () => {
+test('cclens help <command> shows command help', async () => {
   const { stdout } = await execFileAsync(process.execPath, [cliPath, 'help', 'viz'], {
     cwd: repoRoot
   });
 
-  assert.match(stdout, /Usage: cc-monitor viz/);
+  assert.match(stdout, /Usage: cclens viz/);
   assert.match(stdout, /Starts the browser visualizer if needed/);
 });
 
-test('cc-monitor config prints resolved monitor config', async () => {
+test('cclens config prints resolved monitor config', async () => {
   const { stdout } = await execFileAsync(process.execPath, [cliPath, 'config'], {
     cwd: repoRoot,
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: path.join(repoRoot, '.tmp-empty-monitor-home'),
-      CLAUDE_MONITOR_TARGET_BASE_URL: 'https://example.com',
-      CLAUDE_MONITOR_PROXY_PORT: '19001'
+      CLAUDE_CODE_LENS_HOME: path.join(repoRoot, '.tmp-empty-monitor-home'),
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://example.com',
+      CLAUDE_CODE_LENS_PROXY_PORT: '19001'
     }
   });
 
@@ -71,18 +71,32 @@ test('cc-monitor config prints resolved monitor config', async () => {
   assert.equal(config.target.baseUrl, 'https://example.com');
 });
 
-test('cc-monitor config prefers prefixed environment overrides', async () => {
+test('cclens config defaults to the Claude Code Lens home directory', async () => {
   const { stdout } = await execFileAsync(process.execPath, [cliPath, 'config'], {
     cwd: repoRoot,
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: path.join(repoRoot, '.tmp-prefixed-monitor-home'),
-      CLAUDE_MONITOR_PROXY_HOST: '127.0.0.1',
-      CLAUDE_MONITOR_PROXY_PORT: '19011',
-      CLAUDE_MONITOR_TARGET_BASE_URL: 'https://prefixed.example.com',
-      CLAUDE_MONITOR_TARGET_TIMEOUT: '30000',
-      CLAUDE_MONITOR_VISUALIZER_PORT: '5511',
-      CLAUDE_MONITOR_LOGGING_ENABLE_CONSOLE: 'true'
+      CLAUDE_CODE_LENS_HOME: '',
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://example.com'
+    }
+  });
+
+  const config = JSON.parse(stdout);
+  assert.equal(config.app.home, path.join(os.homedir(), '.claude-code-lens'));
+});
+
+test('cclens config prefers prefixed environment overrides', async () => {
+  const { stdout } = await execFileAsync(process.execPath, [cliPath, 'config'], {
+    cwd: repoRoot,
+    env: {
+      ...process.env,
+      CLAUDE_CODE_LENS_HOME: path.join(repoRoot, '.tmp-prefixed-monitor-home'),
+      CLAUDE_CODE_LENS_PROXY_HOST: '127.0.0.1',
+      CLAUDE_CODE_LENS_PROXY_PORT: '19011',
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://prefixed.example.com',
+      CLAUDE_CODE_LENS_TARGET_TIMEOUT: '30000',
+      CLAUDE_CODE_LENS_VISUALIZER_PORT: '5511',
+      CLAUDE_CODE_LENS_LOGGING_ENABLE_CONSOLE: 'true'
     }
   });
 
@@ -95,8 +109,8 @@ test('cc-monitor config prefers prefixed environment overrides', async () => {
   assert.equal(config.logging.enableConsole, true);
 });
 
-test('cc-monitor config reads visualizer port from user config and env', async () => {
-  const monitorHome = await mkdtemp(path.join(os.tmpdir(), 'cc-monitor-config-test-'));
+test('cclens config reads visualizer port from user config and env', async () => {
+  const monitorHome = await mkdtemp(path.join(os.tmpdir(), 'cclens-config-test-'));
   await mkdir(monitorHome, { recursive: true });
   await writeFile(
     path.join(monitorHome, 'config.json'),
@@ -111,9 +125,9 @@ test('cc-monitor config reads visualizer port from user config and env', async (
     cwd: repoRoot,
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_TARGET_BASE_URL: 'https://example.com',
-      CLAUDE_MONITOR_VISUALIZER_PORT: ''
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://example.com',
+      CLAUDE_CODE_LENS_VISUALIZER_PORT: ''
     }
   });
   assert.equal(JSON.parse(fromConfig.stdout).visualizer.port, 5512);
@@ -122,9 +136,9 @@ test('cc-monitor config reads visualizer port from user config and env', async (
     cwd: repoRoot,
     env: {
       ...process.env,
-      CLAUDE_MONITOR_HOME: monitorHome,
-      CLAUDE_MONITOR_TARGET_BASE_URL: 'https://example.com',
-      CLAUDE_MONITOR_VISUALIZER_PORT: '5513'
+      CLAUDE_CODE_LENS_HOME: monitorHome,
+      CLAUDE_CODE_LENS_TARGET_BASE_URL: 'https://example.com',
+      CLAUDE_CODE_LENS_VISUALIZER_PORT: '5513'
     }
   });
   assert.equal(JSON.parse(fromEnv.stdout).visualizer.port, 5513);
