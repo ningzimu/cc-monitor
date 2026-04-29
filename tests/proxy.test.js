@@ -25,6 +25,27 @@ function closeServer(server) {
   return new Promise(resolve => server.close(resolve));
 }
 
+function terminateChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve();
+  }
+
+  return new Promise(resolve => {
+    const timeout = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }, 1000);
+
+    child.once('exit', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+
+    child.kill('SIGTERM');
+  });
+}
+
 async function freePort() {
   const server = http.createServer();
   const port = await listen(server);
@@ -183,7 +204,7 @@ test('proxy preserves query strings and filters upstream length headers', async 
       CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 
@@ -237,7 +258,7 @@ test('proxy preserves target base path prefix when forwarding requests', async (
       CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}/anthropic`
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 
@@ -279,7 +300,7 @@ test('proxy groups logs by JSON metadata session_id', async (t) => {
       CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 
@@ -335,7 +356,7 @@ test('proxy creates one raw log per distinct Claude session_id', async (t) => {
       CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 
@@ -432,7 +453,7 @@ test('proxy discovers target base URL from Claude Code project settings', async 
       ANTHROPIC_BASE_URL: ''
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 
@@ -519,7 +540,7 @@ test('proxy preserves streamed tool_use blocks when SSE events are split across 
       CLAUDE_CODE_LENS_TARGET_BASE_URL: `http://127.0.0.1:${upstreamPort}`
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   await waitForHttp(`http://127.0.0.1:${proxyPort}/__claude-code-lens/health`);
 

@@ -27,6 +27,27 @@ function closeServer(server) {
   return new Promise(resolve => server.close(resolve));
 }
 
+function terminateChild(child) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve();
+  }
+
+  return new Promise(resolve => {
+    const timeout = setTimeout(() => {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }, 1000);
+
+    child.once('exit', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+
+    child.kill('SIGTERM');
+  });
+}
+
 async function freePort() {
   const server = http.createServer();
   const port = await listen(server);
@@ -71,7 +92,7 @@ test('visualizer server reads port from monitor config', async (t) => {
       CLAUDE_CODE_LENS_VISUALIZER_PORT: ''
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   const response = await waitForHttp(`http://127.0.0.1:${port}/__claude-code-lens/health`);
   assert.equal(response.status, 200);
@@ -100,7 +121,7 @@ test('visualizer log API sorts files by modified time descending', async (t) => 
       CLAUDE_CODE_LENS_VISUALIZER_PORT: String(port)
     }
   });
-  t.after(() => child.kill('SIGTERM'));
+  t.after(() => terminateChild(child));
 
   const response = await waitForHttp(`http://127.0.0.1:${port}/api/logs`);
   assert.equal(response.status, 200);
