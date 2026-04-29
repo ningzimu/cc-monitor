@@ -6,7 +6,7 @@ Claude Code Lens is a local observability tool for Claude Code. It runs an Anthr
 
 It is designed for two workflows:
 
-- **One-off debugging**: quickly inspect what Claude Code sent and received for a single run. Use `cclens -p "..."` or `cclens --resume` without changing your Claude Code user or project settings.
+- **One-off debugging**: launch a monitored Claude Code session without changing your Claude Code settings. Running `cclens` opens Claude Code in interactive mode while also starting the proxy and visualizer; append any Claude Code arguments when you need another mode, such as `cclens -p "..."` or `cclens --resume`, and they are passed through automatically.
 - **Long-running monitoring**: keep a local proxy running and explicitly point Claude Code at it for ongoing log capture. Use `cclens proxy`, then start Claude Code with the generated settings file or an environment variable.
 
 Why use it:
@@ -42,9 +42,9 @@ The npm package name is `claude-code-lens`, and the installed command is `cclens
 
 Use one CLI prefix for both monitor commands and Claude Code passthrough. There are two recommended modes.
 
-### Mode 1: One-Off Claude Code Debugging
+### Mode 1: Launch Claude Code With Monitoring
 
-This is the simplest mode for temporary prompt, tool, MCP, or token usage debugging.
+This is the simplest mode for temporary prompt, tool, MCP, or token usage debugging. Running `cclens` starts an interactive Claude Code session and turns monitoring on automatically.
 
 ```bash
 cclens
@@ -57,7 +57,7 @@ One-shot mode:
 1. Starts the local proxy, default `http://localhost:18888`.
 2. Starts the log visualizer, default `http://127.0.0.1:5500`.
 3. Opens the browser.
-4. Launches Claude Code and passes your Claude Code arguments through unchanged.
+4. Launches Claude Code in interactive mode; if you pass Claude Code arguments after `cclens`, they are forwarded unchanged.
 
 Except for monitor subcommands (`proxy`, `stop`, `status`, `viz`, `extract`, `config`, `help`), every argument is passed through to Claude Code automatically. Any Claude Code flag can be appended directly to `cclens`.
 

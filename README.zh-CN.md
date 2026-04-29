@@ -6,7 +6,7 @@ Claude Code Lens 是一个本地 Claude Code 可观测工具：它在 Claude Cod
 
 它适合两类场景：
 
-- **临时调试**：想快速看某一次 Claude Code 到底收到了什么 prompt、有哪些 tools、模型返回了什么。直接用 `cclens -p "..."` 或 `cclens --resume`，不需要改 Claude Code 的用户配置或项目配置。
+- **临时调试**：想在不改 Claude Code 配置的前提下，启动一次被监控的 Claude Code 会话。直接运行 `cclens` 会打开 Claude Code 交互式界面，同时启动代理和可视化页面；如果需要 Claude Code 的其他模式，把参数接在后面即可，例如 `cclens -p "..."` 或 `cclens --resume`，这些参数会自动透传给 Claude Code。
 - **长期监控**：希望之后所有 Claude Code 会话都走同一个本地代理，持续沉淀日志。手动启动 `cclens proxy`，再显式配置 Claude Code 使用这个代理。
 
 核心优势：
@@ -42,9 +42,9 @@ npm 包名是 `claude-code-lens`，安装后的命令是 `cclens`。
 
 只需要记一个命令前缀：`cclens`。这个项目有两种推荐用法。
 
-### 方式一：一次性调试 Claude Code
+### 方式一：一键启动并监控 Claude Code
 
-这是最简单的模式，适合临时 debug prompt、tools、MCP 或 token usage。
+这是最简单的模式，适合临时 debug prompt、tools、MCP 或 token usage。直接运行 `cclens` 会启动 Claude Code 的交互式会话，并自动开启监控。
 
 ```bash
 cclens
@@ -57,7 +57,7 @@ cclens --resume
 1. 启动本地代理，默认 `http://localhost:18888`。
 2. 启动日志可视化页面，默认 `http://127.0.0.1:5500`。
 3. 打开浏览器页面。
-4. 启动 Claude Code，并把你传入的参数原样透传给 Claude Code。
+4. 启动 Claude Code 交互式会话；如果你在 `cclens` 后面传入 Claude Code 参数，则原样透传给 Claude Code。
 
 除 `proxy`、`stop`、`status`、`viz`、`extract`、`config`、`help` 这些 monitor 子命令外，其他参数都会自动透传给 Claude Code。所以 Claude Code 支持的参数都可以直接写在 `cclens` 后面。
 
