@@ -1871,8 +1871,11 @@
         <div class="center-area">
           <!-- Toolbar: Navigation Only -->
           <div class="toolbar">
-            <div class="toolbar-label">Request navigation</div>
-            <div class="nav-group">
+          <div class="toolbar-label">Request navigation</div>
+          <div class="nav-group">
+              <button id="downloadFileBtn" class="nav-btn" disabled aria-label="Download current session" title="No session file selected">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              </button>
               <button id="firstBtn" class="nav-btn" disabled aria-label="First">
                 <svg viewBox="0 0 24 24"><path d="M19 20L9 12l10-8"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
               </button>
@@ -1980,6 +1983,7 @@
   <!-- Your browser-side parser must provide: window.parseConversationLog(logString) -->
   <script src="./parser.js"></script>
   <script src="./reload-position.js"></script>
+  <script src="./download-current-log.js"></script>
   <script>
     // -------- State --------
     const state = {
@@ -3268,6 +3272,46 @@
       }
     }
 
+    function getCurrentLocalFile() {
+      return isLocalFileValue(state.currentLogUrl)
+        ? state.localFiles.get(state.currentLogUrl)
+        : null;
+    }
+
+    function currentDownloadInfo() {
+      return window.CCLensDownloadCurrentLog.resolveDownloadInfo({
+        currentLogUrl: state.currentLogUrl,
+        localFile: getCurrentLocalFile()
+      });
+    }
+
+    function notifyCurrentLogChanged() {
+      window.dispatchEvent(new Event('cclens-current-log-change'));
+    }
+
+    function triggerDownload(info) {
+      if (!info.enabled) return;
+
+      const link = document.createElement('a');
+      link.download = info.fileName;
+
+      if (info.kind === 'blob') {
+        const blob = new Blob([info.text], { type: 'application/json' });
+        const objectUrl = URL.createObjectURL(blob);
+        link.href = objectUrl;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
+
+      link.href = info.href;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
     function normalizeLogFiles(logFiles) {
       if (!Array.isArray(logFiles)) return [];
 
@@ -3432,6 +3476,7 @@
 
         state.currentLogUrl = url;
         saveSelectedLog(url);
+        notifyCurrentLogChanged();
 
         // Live reload follows the newest request only when the user was already at the newest request.
         const targetIndex = resolveTargetIndex(url, total, options, previousIndex, previousTotal);
@@ -3468,6 +3513,7 @@
         metaInfoEl.textContent = '';
 
         state.currentLogUrl = value;
+        notifyCurrentLogChanged();
         const targetIndex = resolveTargetIndex(value, total, options, previousIndex, previousTotal);
         setIndex(targetIndex);
       } catch (err) {
@@ -3623,6 +3669,7 @@
         metaInfoEl.textContent = '';
 
         state.currentLogUrl = localValue;
+        notifyCurrentLogChanged();
         setIndex(0);
 
         logSelect.value = localValue;
@@ -3720,6 +3767,7 @@
       const fileListView = document.getElementById('fileListView');
       const fileSearch = document.getElementById('fileSearch');
       const openFileBtn = document.getElementById('openFileBtn');
+      const downloadFileBtn = document.getElementById('downloadFileBtn');
       const activeFilePill = document.getElementById('activeFilePill');
       const activeFileLabel = document.getElementById('activeFileLabel');
 
@@ -3736,9 +3784,22 @@
       railFiles.addEventListener('click', toggleLeft);
       if (leftCloseBtn) leftCloseBtn.addEventListener('click', () => setLeftCollapsed(true));
       if (openFileBtn) openFileBtn.addEventListener('click', () => fileInput.click());
+      if (downloadFileBtn) {
+        downloadFileBtn.addEventListener('click', () => triggerDownload(currentDownloadInfo()));
+      }
+
+      function updateDownloadButton() {
+        if (!downloadFileBtn) return;
+        const info = currentDownloadInfo();
+        downloadFileBtn.disabled = !info.enabled;
+        downloadFileBtn.title = info.enabled
+          ? `Download ${info.fileName}`
+          : 'No session file selected';
+      }
 
       // Build file list from logSelect options (which is populated by loadLogFiles)
       function renderFileList() {
+        updateDownloadButton();
         const query = (fileSearch.value || '').trim().toLowerCase();
         const opts = Array.from(logSelect.options)
           .filter(o => o.value && o.value !== SELECT_FILE_VALUE);
@@ -3812,6 +3873,10 @@
       new MutationObserver(() => { renderFileList(); updateActiveFilePill(); })
         .observe(logSelect, { childList: true });
       logSelect.addEventListener('change', () => { renderFileList(); updateActiveFilePill(); });
+      window.addEventListener('cclens-current-log-change', () => {
+        updateDownloadButton();
+        renderFileList();
+      });
       // Also watch fileNameEl (gets set on file-input load)
       new MutationObserver(updateActiveFilePill)
         .observe(fileNameEl, { childList: true, characterData: true, subtree: true });
@@ -3827,6 +3892,7 @@
       // Initial render
       renderFileList();
       updateActiveFilePill();
+      updateDownloadButton();
       // Mark left rail as active by default (panel open)
       railFiles.classList.add('active');
     })();

@@ -11,6 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(__dirname, '..');
 const visualizerPath = path.join(repoRoot, 'src', 'visualizer', 'server.js');
 const reloadPositionPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'reload-position.js');
+const downloadCurrentLogPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'download-current-log.js');
 
 function listen(server, port = 0) {
   return new Promise((resolve, reject) => {
@@ -133,4 +134,35 @@ test('visualizer live reload follows newest request only when already at latest'
     options: normalizeLoadOptions({ preferLatest: true }),
     storedIndex: 6
   }), 14);
+});
+
+test('visualizer builds download metadata for remote and local session logs', async () => {
+  await import(`${pathToFileURL(downloadCurrentLogPath).href}?cache=${Date.now()}`);
+  const { resolveDownloadInfo } = globalThis.CCLensDownloadCurrentLog;
+
+  assert.deepEqual(resolveDownloadInfo({
+    currentLogUrl: '/logs/messages-20260429_032823-a72e23d4.json'
+  }), {
+    enabled: true,
+    kind: 'remote',
+    href: '/logs/messages-20260429_032823-a72e23d4.json',
+    fileName: 'messages-20260429_032823-a72e23d4.json'
+  });
+
+  assert.deepEqual(resolveDownloadInfo({
+    currentLogUrl: 'local-file:1',
+    localFile: {
+      name: 'manual-session.json',
+      text: '{"ok":true}'
+    }
+  }), {
+    enabled: true,
+    kind: 'blob',
+    text: '{"ok":true}',
+    fileName: 'manual-session.json'
+  });
+
+  assert.deepEqual(resolveDownloadInfo({ currentLogUrl: '' }), {
+    enabled: false
+  });
 });
