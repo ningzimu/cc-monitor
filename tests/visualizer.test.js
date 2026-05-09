@@ -295,4 +295,6 @@ test('visualizer renders rail hover information outside the scroll-clipped rail'
   assert.match(html, /function showRailHoverTooltip\(trigger\)/);
   assert.match(html, /railHoverTooltip\.style\.position\s*=\s*'fixed'/);
   assert.match(html, /document\.addEventListener\('mouseover'/);
+  assert.doesNotMatch(html, /button\.title\s*=\s*option\.tooltip/);
+  assert.doesNotMatch(html, /\|\|\s*trigger\.title/);
 });

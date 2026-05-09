@@ -2676,7 +2676,6 @@
         button.dataset.empty = option.count === 0 ? 'true' : 'false';
         button.classList.toggle('active', option.value === previous);
         button.setAttribute('aria-label', option.tooltip.replace(/\n/g, '; '));
-        button.title = option.tooltip;
         const label = document.createElement('span');
         label.className = 'agent-rail-label';
         label.innerHTML = agentRailIcon(option.role);
@@ -4068,7 +4067,7 @@
     function showRailHoverTooltip(trigger) {
       if (!railHoverTooltip || !trigger) return;
       const source = trigger.querySelector('.rail-tooltip');
-      const text = source?.textContent?.trim() || trigger.getAttribute('aria-label') || trigger.title;
+      const text = source?.textContent?.trim() || trigger.getAttribute('aria-label');
       if (!text) return;
 
       const rect = trigger.getBoundingClientRect();
