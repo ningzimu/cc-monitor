@@ -6,6 +6,7 @@ const DEFAULT_PROJECTS_DIR = path.join(os.homedir(), '.claude', 'projects');
 const HIGH_CONFIDENCE_SCORE = 60;
 const LOW_CONFIDENCE_SCORE = 25;
 const TIME_MATCH_LIMIT_MS = 30_000;
+const nativeSessionFileCache = new Map();
 
 function emptyView(sessionId, reason = 'native_trace_not_found') {
   return {
@@ -30,34 +31,45 @@ function isSessionId(value) {
     /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
 }
 
-function walkFiles(dir, predicate, output = []) {
-  if (!fs.existsSync(dir)) return output;
-
-  let entries = [];
+async function pathExists(filePath) {
   try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
+    await fs.promises.access(filePath, fs.constants.R_OK);
+    return true;
   } catch {
-    return output;
+    return false;
+  }
+}
+
+export async function findNativeSessionFile(sessionId, projectsDir = DEFAULT_PROJECTS_DIR) {
+  if (!isSessionId(sessionId)) return null;
+
+  const cacheKey = `${projectsDir}\0${sessionId}`;
+  if (nativeSessionFileCache.has(cacheKey)) {
+    return nativeSessionFileCache.get(cacheKey);
   }
 
-  for (const entry of entries) {
-    const entryPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      walkFiles(entryPath, predicate, output);
-    } else if (predicate(entryPath, entry.name)) {
-      output.push(entryPath);
+  let projectEntries = [];
+  try {
+    projectEntries = await fs.promises.readdir(projectsDir, { withFileTypes: true });
+  } catch {
+    return null;
+  }
+
+  const exactName = `${sessionId}.jsonl`;
+  const projectDirs = projectEntries
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort();
+
+  for (const projectDir of projectDirs) {
+    const candidate = path.join(projectsDir, projectDir, exactName);
+    if (await pathExists(candidate)) {
+      nativeSessionFileCache.set(cacheKey, candidate);
+      return candidate;
     }
   }
 
-  return output;
-}
-
-export function findNativeSessionFile(sessionId, projectsDir = DEFAULT_PROJECTS_DIR) {
-  if (!isSessionId(sessionId) || !fs.existsSync(projectsDir)) return null;
-
-  const exactName = `${sessionId}.jsonl`;
-  const matches = walkFiles(projectsDir, (_filePath, name) => name === exactName);
-  return matches.sort()[0] || null;
+  return null;
 }
 
 function safeJsonParse(line) {
@@ -367,6 +379,10 @@ function unmatchedAssignment(uid) {
 
 export function attributeLensRequests(logData, nativeTrace) {
   const agentsById = new Map(nativeTrace.agents.map(agent => [agent.id, agent]));
+  const availableEvents = [...nativeTrace.assistantEvents].sort((a, b) =>
+    Date.parse(a.timestamp) - Date.parse(b.timestamp)
+  );
+  const usedEventIds = new Set();
   const assignments = {};
   const stats = {
     totalRequests: 0,
@@ -375,11 +391,16 @@ export function attributeLensRequests(logData, nativeTrace) {
     unmatched: 0
   };
 
-  for (const request of lensRequests(logData)) {
+  const requests = lensRequests(logData).sort((a, b) =>
+    Date.parse(a.outputAt) - Date.parse(b.outputAt)
+  );
+
+  for (const request of requests) {
     stats.totalRequests += 1;
 
     let best = null;
-    for (const event of nativeTrace.assistantEvents) {
+    for (const event of availableEvents) {
+      if (usedEventIds.has(event.id)) continue;
       const match = scoreMatch(request, event);
       if (!best || match.score > best.score || (match.score === best.score && match.deltaMs < best.deltaMs)) {
         best = { ...match, event };
@@ -393,6 +414,7 @@ export function attributeLensRequests(logData, nativeTrace) {
       continue;
     }
 
+    usedEventIds.add(best.event.id);
     const agent = agentsById.get(best.event.agentId);
     assignments[request.uid] = {
       uid: request.uid,
@@ -422,7 +444,7 @@ export async function buildLeadSubagentView(logData, options = {}) {
   }
 
   const projectsDir = options.projectsDir || DEFAULT_PROJECTS_DIR;
-  const nativeFile = findNativeSessionFile(sessionId, projectsDir);
+  const nativeFile = await findNativeSessionFile(sessionId, projectsDir);
   if (!nativeFile) {
     return emptyView(sessionId);
   }

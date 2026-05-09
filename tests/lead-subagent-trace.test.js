@@ -176,3 +176,62 @@ test('buildLeadSubagentView returns an empty view when native trace is absent', 
   assert.deepEqual(view.assignments, {});
   assert.equal(view.stats.totalRequests, 0);
 });
+
+test('buildLeadSubagentView does not recursively scan nested project files', async () => {
+  const projectsDir = await mkdtemp(path.join(os.tmpdir(), 'cclens-nested-projects-'));
+  const nestedDir = path.join(projectsDir, '-tmp-project', 'nested');
+  await mkdir(nestedDir, { recursive: true });
+  await writeFile(
+    path.join(nestedDir, `${SESSION_ID}.jsonl`),
+    jsonl([
+      assistantEvent('2026-05-09T10:00:00.000Z', 'claude-sonnet-4-5', [
+        { type: 'text', text: 'Nested file should be ignored' }
+      ])
+    ])
+  );
+
+  const view = await buildLeadSubagentView({
+    session_id: SESSION_ID,
+    interactions: [
+      lensOutput('request-1', '2026-05-09T10:00:00.000Z', 'claude-sonnet-4-5', [
+        { type: 'text', text: 'Nested file should be ignored' }
+      ])
+    ]
+  }, { projectsDir });
+
+  assert.equal(view.nativeTrace.found, false);
+  assert.equal(view.nativeTrace.reason, 'native_trace_not_found');
+});
+
+test('buildLeadSubagentView consumes native assistant events only once', async () => {
+  const projectsDir = await mkdtemp(path.join(os.tmpdir(), 'cclens-one-to-one-projects-'));
+  const projectDir = path.join(projectsDir, '-tmp-project');
+  await mkdir(projectDir, { recursive: true });
+  await writeFile(
+    path.join(projectDir, `${SESSION_ID}.jsonl`),
+    jsonl([
+      assistantEvent('2026-05-09T10:00:00.000Z', 'claude-sonnet-4-5', [
+        { type: 'text', text: 'Shared native response body for matching' }
+      ])
+    ])
+  );
+
+  const view = await buildLeadSubagentView({
+    session_id: SESSION_ID,
+    interactions: [
+      lensOutput('request-1', '2026-05-09T10:00:00.000Z', 'claude-sonnet-4-5', [
+        { type: 'text', text: 'Shared native response body for matching' }
+      ]),
+      lensOutput('request-2', '2026-05-09T10:00:00.000Z', 'claude-sonnet-4-5', [
+        { type: 'text', text: 'Shared native response body for matching' }
+      ])
+    ]
+  }, { projectsDir });
+
+  assert.equal(view.assignments['request-1'].agentId, 'lead');
+  assert.equal(view.assignments['request-1'].confidence, 'high');
+  assert.equal(view.assignments['request-2'].agentId, 'unmatched');
+  assert.equal(view.assignments['request-2'].confidence, 'unmatched');
+  assert.equal(view.stats.highConfidence, 1);
+  assert.equal(view.stats.unmatched, 1);
+});
