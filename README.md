@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/claude-code-lens.svg)](https://www.npmjs.com/package/claude-code-lens) [![简体中文](https://img.shields.io/badge/README-简体中文-red.svg)](./README.zh-CN.md)
 
-![Claude Code Lens hero](./assets/claude-code-lens-hero.png)
+![Claude Code Lens hero](./assets/claude-code-lens-hero-en.png)
 
 Claude Code Lens is a local observability tool for Claude Code. It runs an Anthropic-compatible proxy between Claude Code and the real upstream service, records system prompts, messages, tool definitions, tool calls, streaming responses, and token usage, then lets you inspect them in a browser.
 
