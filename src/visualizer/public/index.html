@@ -3801,8 +3801,10 @@
       }
 
       // Remember current position if preserving the already selected file.
-      const previousIndex = options.preservePosition && state.currentLogUrl === url ? state.index : null;
-      const previousTotal = previousIndex !== null ? (state.data?.conversations || []).length : null;
+      const shouldPreserveCurrentView = options.preservePosition && state.currentLogUrl === url;
+      const previousFilter = shouldPreserveCurrentView ? state.agentFilter : 'all';
+      const previousIndex = shouldPreserveCurrentView ? state.index : null;
+      const previousTotal = previousIndex !== null ? conversationsForCurrentFilter().length : null;
 
       try {
         const response = await fetch(url);
@@ -3819,14 +3821,14 @@
         const json = window.parseConversationLog(text);
         console.log(json);
 
-        state.agentFilter = 'all';
+        state.agentFilter = previousFilter;
         applyLeadSubagentView(json, await fetchLeadSubagentView(url));
         state.data = json;
         buildMaps(json);
         renderResources();
         renderLeadSubagentFilter();
 
-        const total = (json.conversations || []).length;
+        const total = conversationsForCurrentFilter().length;
         metaInfoEl.textContent = '';
 
         state.currentLogUrl = url;
@@ -3850,8 +3852,10 @@
         return;
       }
 
-      const previousIndex = options.preservePosition && state.currentLogUrl === value ? state.index : null;
-      const previousTotal = previousIndex !== null ? (state.data?.conversations || []).length : null;
+      const shouldPreserveCurrentView = options.preservePosition && state.currentLogUrl === value;
+      const previousFilter = shouldPreserveCurrentView ? state.agentFilter : 'all';
+      const previousIndex = shouldPreserveCurrentView ? state.index : null;
+      const previousTotal = previousIndex !== null ? conversationsForCurrentFilter().length : null;
 
       try {
         if (typeof window.parseConversationLog !== 'function') {
@@ -3860,14 +3864,14 @@
 
         const json = window.parseConversationLog(file.text);
         fileNameEl.textContent = file.name;
-        state.agentFilter = 'all';
+        state.agentFilter = previousFilter;
         applyLeadSubagentView(json, emptyLeadSubagentView('local-file'));
         state.data = json;
         buildMaps(json);
         renderResources();
         renderLeadSubagentFilter();
 
-        const total = (json.conversations || []).length;
+        const total = conversationsForCurrentFilter().length;
         metaInfoEl.textContent = '';
 
         state.currentLogUrl = value;

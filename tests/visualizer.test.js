@@ -246,6 +246,15 @@ test('visualizer live reload follows newest request only when already at latest'
   }), 14);
 });
 
+test('visualizer live reload preserves the active agent filter', async () => {
+  const html = await readFile(visualizerHtmlPath, 'utf8');
+
+  assert.match(html, /const previousFilter = shouldPreserveCurrentView \? state\.agentFilter : 'all';/);
+  assert.match(html, /state\.agentFilter = previousFilter;/);
+  assert.match(html, /const previousTotal = previousIndex !== null \? conversationsForCurrentFilter\(\)\.length : null;/);
+  assert.doesNotMatch(html, /state\.agentFilter = 'all';\s*applyLeadSubagentView\(json, await fetchLeadSubagentView\(url\)\)/);
+});
+
 test('visualizer builds download metadata for remote and local session logs', async () => {
   await import(`${pathToFileURL(downloadCurrentLogPath).href}?cache=${Date.now()}`);
   const { resolveDownloadInfo } = globalThis.CCLensDownloadCurrentLog;
