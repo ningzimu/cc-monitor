@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import test from 'node:test';
-import { buildClaudeArgs } from '../src/cli/service.js';
+import { buildClaudeArgs, buildLocalProxyBaseUrl } from '../src/cli/service.js';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,6 +25,7 @@ test('cclens help exposes the unified command surface', async () => {
   assert.match(stdout, /proxy\s+Start only the local API proxy/);
   assert.match(stdout, /viz\s+Start\/open the browser log visualizer/);
   assert.match(stdout, /extract \[log-file\]\s+Extract prompts\/tools from a log file/);
+  assert.match(stdout, /trace\s+Find Lead\/Subagent traces and export Markdown/);
   assert.match(stdout, /cclens proxy --help/);
 });
 
@@ -48,6 +49,10 @@ test('cclens passthrough uses the generated monitor settings file by default', (
   );
 });
 
+test('local proxy base URL stays a unified local origin', () => {
+  assert.equal(buildLocalProxyBaseUrl(18888), 'http://localhost:18888');
+});
+
 test('monitor subcommands provide detailed help', async () => {
   const cases = [
     ['proxy', /Starts only the local Anthropic-compatible proxy/],
@@ -55,6 +60,7 @@ test('monitor subcommands provide detailed help', async () => {
     ['status', /Current port owner from lsof/],
     ['viz', /Reads log files from ~\/.claude-code-lens\/raw_logs\//],
     ['extract', /With no file argument, reads the newest file/],
+    ['trace', /Provides agent-first structured trace discovery/],
     ['config', /Resolution order:/]
   ];
 

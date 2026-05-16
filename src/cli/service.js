@@ -408,7 +408,7 @@ async function proxySubcommand() {
   // Verify startup
   if (isReady && isProcessRunning(child.pid)) {
     // Update settings.json with current port
-    updateSettingsFile(port);
+    updateSettingsFile(buildLocalProxyBaseUrl(port));
 
     console.log('');
     console.log(`${colors.green}✅ 代理服务器启动成功!${colors.reset}`);
@@ -888,7 +888,11 @@ async function startVisualizer() {
 /**
  * Update settings.json with current proxy port
  */
-function updateSettingsFile(port) {
+function buildLocalProxyBaseUrl(port) {
+  return `http://localhost:${port}`;
+}
+
+function updateSettingsFile(proxyUrl) {
   try {
     // Ensure directory exists
     if (!fs.existsSync(APP_HOME)) {
@@ -898,7 +902,7 @@ function updateSettingsFile(port) {
     // Create/update settings.json
     const settings = {
       env: {
-        ANTHROPIC_BASE_URL: `http://localhost:${port}`
+        ANTHROPIC_BASE_URL: proxyUrl
       }
     };
 
@@ -1074,7 +1078,7 @@ async function defaultStartup(claudeExtraArgs) {
 
     // Step 2: Start proxy server
     verboseLog(`${colors.cyan}[2/4]${colors.reset} Starting proxy...`);
-    const proxyUrl = `http://localhost:${port}`;
+    const proxyUrl = buildLocalProxyBaseUrl(port);
     let proxyInfo;
 
     if (existingProxyReady) {
@@ -1098,7 +1102,7 @@ async function defaultStartup(claudeExtraArgs) {
     verboseLog(`${colors.blue}Proxy PID: ${proxyInfo.pid}${colors.reset}`);
     verboseLog(`${colors.blue}Proxy log: ${proxyInfo.logPath}${colors.reset}`);
 
-    updateSettingsFile(port);
+    updateSettingsFile(proxyUrl);
 
     // Step 3: Start visualizer
     verboseLog(`${colors.cyan}[3/4]${colors.reset} Starting visualizer...`);
@@ -1148,6 +1152,7 @@ async function defaultStartup(claudeExtraArgs) {
 export {
   defaultStartup as startAll,
   buildClaudeArgs,
+  buildLocalProxyBaseUrl,
   proxySubcommand as startProxy,
   statusSubcommand as statusProxy,
   stopSubcommand as stopProxy

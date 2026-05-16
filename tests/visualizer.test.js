@@ -14,6 +14,7 @@ const visualizerPath = path.join(repoRoot, 'src', 'visualizer', 'server.js');
 const visualizerHtmlPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'index.html');
 const reloadPositionPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'reload-position.js');
 const downloadCurrentLogPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'download-current-log.js');
+const parserPath = path.join(repoRoot, 'src', 'visualizer', 'public', 'parser.js');
 const leadSubagentSessionId = '11111111-2222-4333-8444-555555555555';
 
 function listen(server, port = 0) {
@@ -335,13 +336,26 @@ test('visualizer builds download metadata for remote and local session logs', as
     currentLogUrl: '/logs/messages-20260429_032823-a72e23d4.json',
     parsedData: {
       session_title: 'Session a72e23d4',
-      prompts: { title_prompt: 'Generate a concise, sentence-case title. Return JSON with a single "title" field.' }
+      prompts: {}
     },
     conversations: [{
       uid: 'title-req',
       started_at: '2026-05-09T10:00:00.000Z',
       input: {
-        system: 'title_prompt',
+        system: [{ type: 'text', text: 'Future Claude Code title prompt text changed completely.' }],
+        output_config: {
+          format: {
+            type: 'json_schema',
+            schema: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' }
+              },
+              required: ['title'],
+              additionalProperties: false
+            }
+          }
+        },
         messages: [{ role: 'user', content: 'Original user request' }]
       },
       result: {
@@ -356,6 +370,32 @@ test('visualizer builds download metadata for remote and local session logs', as
   assert.doesNotMatch(titleRequestInfo.text, /Original user request/);
   assert.doesNotMatch(titleRequestInfo.text, /Demo task/);
   assert.match(titleRequestInfo.text, /Messages in this export:\*\* 0/);
+
+  const titleOutputFallbackInfo = resolveDownloadInfo({
+    currentLogUrl: '/logs/messages-20260429_032823-a72e23d4.json',
+    parsedData: {
+      session_title: 'Session a72e23d4',
+      prompts: {}
+    },
+    conversations: [{
+      uid: 'title-req-fallback',
+      started_at: '2026-05-09T10:00:00.000Z',
+      input: {
+        tools: [],
+        messages: [{ role: 'user', content: 'Original user request' }]
+      },
+      result: {
+        data: {
+          content: [{ type: 'text', text: '{"title":"Demo task"}' }]
+        }
+      }
+    }],
+    agentFilter: 'lead',
+    date: new Date('2026-05-09T12:00:00.000Z')
+  });
+  assert.doesNotMatch(titleOutputFallbackInfo.text, /Original user request/);
+  assert.doesNotMatch(titleOutputFallbackInfo.text, /Demo task/);
+  assert.match(titleOutputFallbackInfo.text, /Messages in this export:\*\* 0/);
 
   assert.deepEqual(resolveDownloadInfo({
     currentLogUrl: '/logs/messages-20260429_032823-a72e23d4.json'
@@ -382,6 +422,25 @@ test('visualizer builds download metadata for remote and local session logs', as
   assert.deepEqual(resolveDownloadInfo({ currentLogUrl: '' }), {
     enabled: false
   });
+});
+
+test('visualizer parser module exposes parseConversationLog globally', async () => {
+  const previous = globalThis.parseConversationLog;
+  delete globalThis.parseConversationLog;
+  await import(`${pathToFileURL(parserPath).href}?cache=${Date.now()}`);
+
+  assert.equal(typeof globalThis.parseConversationLog, 'function');
+  const parsed = globalThis.parseConversationLog(JSON.stringify({
+    session_id: leadSubagentSessionId,
+    interactions: []
+  }));
+  assert.equal(parsed.session_title, `Session ${leadSubagentSessionId.slice(0, 8)}`);
+
+  if (previous) {
+    globalThis.parseConversationLog = previous;
+  } else {
+    delete globalThis.parseConversationLog;
+  }
 });
 
 test('visualizer fixes the right rail in the viewport and exposes a back-to-top control', async () => {

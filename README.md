@@ -27,6 +27,8 @@ The visualizer splits each Claude Code request into input context, model output,
 
 ## Install
 
+Install the `cclens` CLI:
+
 ```bash
 npm install -g claude-code-lens
 ```
@@ -39,6 +41,20 @@ npm install -g .
 ```
 
 The npm package name is `claude-code-lens`, and the installed command is `cclens`.
+
+Optional: install the Claude Code Skill for agent-driven trace analysis:
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer
+```
+
+For a global, non-interactive install:
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer -g -y
+```
+
+The Skill install only adds the Agent Skill. It does not run `npm install -g claude-code-lens`, so install the CLI first if you want the agent to use `cclens trace`.
 
 ## Usage
 
@@ -142,8 +158,21 @@ Command reference:
 | `cclens status` | Shows proxy PID and port ownership | Check whether the proxy is running or whether another process owns the port |
 | `cclens viz` | Starts/opens the log visualizer | Inspect existing logs without launching Claude Code |
 | `cclens extract [log-file]` | Extracts prompts and tools from logs | Uses the newest log by default, or a specific file when provided |
+| `cclens trace` | Lists, inspects, and exports session traces without the browser UI | Find a session by ID or time clue, inspect Lead/Subagent behavior, export Markdown for analysis |
 | `cclens config` | Prints the resolved config | Verify ports, target base URL, visualizer settings, and env overrides |
 | `cclens --version` | Prints the installed CLI version | Confirm which npm package version is currently installed |
+
+### Agent-Driven Trace Analysis
+
+A Claude Code Skill is included at `skills/cclens-trace-analyzer/`. Install it with:
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer
+```
+
+When loaded into Claude Code, the agent can run `cclens trace list → show → export → Read` on its own — no browser UI needed. It locates sessions by ID fragment or time clues, inspects Lead/Subagent behavior, exports Markdown, and reports findings with evidence and recommendations.
+
+### Visualizer
 
 The visualizer opens automatically during one-click startup. Set `CLAUDE_CODE_LENS_OPEN_BROWSER=false` to disable that behavior.
 Startup output is intentionally brief. Set `CLAUDE_CODE_LENS_VERBOSE=true` to print process IDs, log paths, and startup steps.
@@ -243,6 +272,7 @@ src/cli/              # command orchestration
 src/proxy/            # local proxy and session logger
 src/visualizer/       # browser UI for reading raw_logs
 src/extractor/        # prompt/tool extraction implementation
+skills/               # Claude Code Skills (trace analyzer)
 tests/                # CLI and proxy behavior tests
 ```
 

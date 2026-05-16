@@ -27,6 +27,8 @@ Claude Code Lens 是一个本地 Claude Code 可观测工具：它在 Claude Cod
 
 ## 安装
 
+安装 `cclens` CLI：
+
 ```bash
 npm install -g claude-code-lens
 ```
@@ -39,6 +41,20 @@ npm install -g .
 ```
 
 npm 包名是 `claude-code-lens`，安装后的命令是 `cclens`。
+
+可选：安装用于 Agent 驱动 trace 分析的 Claude Code Skill：
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer
+```
+
+如果想全局安装并跳过交互确认：
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer -g -y
+```
+
+Skill 安装只会添加 Agent Skill，不会执行 `npm install -g claude-code-lens`。如果希望 Agent 使用 `cclens trace`，请先安装 CLI。
 
 ## 使用方式
 
@@ -142,8 +158,21 @@ cclens help proxy
 | `cclens status` | 查看代理是否运行、PID 和端口占用 | 排查代理是否已启动、端口是否被其他进程占用 |
 | `cclens viz` | 启动或打开日志可视化页面 | 只想查看已有日志，不想重新启动 Claude Code |
 | `cclens extract [log-file]` | 从日志提取 prompts 和 tools | 不传文件时读取最新日志；传文件时读取指定日志 |
+| `cclens trace` | 列出、查看和导出会话 trace（不依赖浏览器 UI） | 按 session ID 或时间线索查找某次会话记录，查看 Lead/Subagent 行为，导出 Markdown 做离线分析 |
 | `cclens config` | 输出最终生效配置 | 检查端口、上游 base URL、可视化端口等配置是否符合预期 |
 | `cclens --version` | 输出当前安装的 CLI 版本 | 确认本机正在使用哪个 npm 包版本 |
+
+### Agent 驱动 Trace 分析
+
+项目包含一个 Claude Code Skill，位于 `skills/cclens-trace-analyzer/`。安装命令：
+
+```bash
+npx skills add ningzimu/claude-code-lens --skill cclens-trace-analyzer
+```
+
+加载到 Claude Code 后，Agent 可自主完成 `cclens trace list → show → export → Read` 全流程，无需浏览器 UI。支持按 session ID 片段或时间线索定位会话，查看 Lead/Subagent 行为，导出 Markdown 并给出分析报告。
+
+### 可视化页面
 
 一键启动时会自动打开可视化页面。设置 `CLAUDE_CODE_LENS_OPEN_BROWSER=false` 可以禁用自动打开浏览器。
 启动输出默认保持简洁。设置 `CLAUDE_CODE_LENS_VERBOSE=true` 可以打印 PID、日志路径和启动步骤等详细信息。
@@ -243,6 +272,7 @@ src/cli/              # 命令编排
 src/proxy/            # 本地代理和会话日志
 src/visualizer/       # 读取 raw_logs 的浏览器 UI
 src/extractor/        # prompt/tool 提取逻辑
+skills/               # Claude Code Skills（trace 分析器）
 tests/                # CLI 和代理行为测试
 ```
 
