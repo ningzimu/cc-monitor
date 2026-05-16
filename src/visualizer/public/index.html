@@ -2130,7 +2130,7 @@
   <!-- Your browser-side parser must provide: window.parseConversationLog(logString) -->
   <script src="./parser.js"></script>
   <script src="./reload-position.js"></script>
-  <script src="./download-current-log.js"></script>
+  <script type="module" src="./download-current-log.js"></script>
   <script>
     // -------- State --------
     const state = {
@@ -3627,6 +3627,7 @@
     }
 
     function currentDownloadInfo() {
+      if (!window.CCLensDownloadCurrentLog) return { enabled: false };
       return window.CCLensDownloadCurrentLog.resolveDownloadInfo({
         currentLogUrl: state.currentLogUrl,
         localFile: getCurrentLocalFile(),
@@ -4304,6 +4305,10 @@
         .observe(logSelect, { childList: true });
       logSelect.addEventListener('change', () => { renderFileList(); updateActiveFilePill(); });
       window.addEventListener('cclens-current-log-change', () => {
+        updateDownloadButton();
+        renderFileList();
+      });
+      window.addEventListener('cclens-download-export-ready', () => {
         updateDownloadButton();
         renderFileList();
       });

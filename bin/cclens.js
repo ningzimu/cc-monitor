@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
-const commands = new Set(['proxy', 'stop', 'status', 'viz', 'extract', 'config', 'help']);
+const commands = new Set(['proxy', 'stop', 'status', 'viz', 'extract', 'trace', 'config', 'help']);
 
 function getPackageVersion() {
   try {
@@ -194,6 +194,28 @@ Related:
 `);
 
   program
+    .command('trace')
+    .description('Find Lead/Subagent traces and export Markdown for agent analysis.')
+    .addHelpText('after', `
+What it does:
+  Provides agent-first structured trace discovery and Markdown export.
+
+Behavior:
+  - cclens trace list returns compact sessions with sessionId, startedAt, context, status, agents
+  - cclens trace show returns Lead/Subagent context for selecting agents
+  - cclens trace export writes Markdown and returns markdownPath
+  - Use -f json for agent consumption; yaml is also supported
+
+Examples:
+  cclens trace list -f json
+  cclens trace show --session <session-id> -f json
+  cclens trace export --session <session-id> --agent <agent-id> -f json
+
+Related:
+  cclens viz
+`);
+
+  program
     .command('config')
     .description('Print the resolved monitor configuration as JSON.')
     .addHelpText('after', `
@@ -315,6 +337,11 @@ async function main() {
 
   if (first === 'extract') {
     runNodeScript('src/extractor/cli.js', args.slice(1));
+    return;
+  }
+
+  if (first === 'trace') {
+    runNodeScript('src/trace/cli.js', args.slice(1));
     return;
   }
 
