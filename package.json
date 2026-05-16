@@ -13,6 +13,7 @@
   "files": [
     "assets/",
     "bin/",
+    "skills/",
     "src/",
     "README.md",
     "README.zh-CN.md",

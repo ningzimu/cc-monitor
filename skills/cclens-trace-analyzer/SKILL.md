@@ -1,6 +1,6 @@
 ---
 name: cclens-trace-analyzer
-description: 分析 Claude Code 会话的 trace，当用户询问说"分析 trace"、"查看 session"、"排查 subagent"、"最近一次 trace"、"看看这个 session 里发生了什么"、"导出 trace"、"这个 subagent 为什么失败了"、提供 sessionId 片段、时间范围、关键词，使用此 Skill。
+description: 分析 Claude Code 会话的 trace。当用户提及 UUID 格式的 session ID（由数字与小写字母组成）、时间线索（"刚才"、"今天"、"最近一次"）、排查 Agent行为原因、希望查看某条claude code会话内容、对 trace 内容进行分析时，使用此 Skill。
 ---
 
 # CCLens Trace Analyzer
@@ -15,14 +15,14 @@ description: 分析 Claude Code 会话的 trace，当用户询问说"分析 trac
 cclens trace --help 2>&1
 ```
 
-- 如果输出包含 `Commands: list [options]` 等子命令 → 正常使用 `cclens trace`。
-- 如果输出的是 Claude Code 的帮助（`Usage: claude [options]`）→ 说明当前安装的 `cclens` 版本还不包含 trace 功能，改用源码运行：
+- 如果输出以 `Usage: cclens trace` 开头 → 正常使用 `cclens trace`。
+- 如果输出的是 Claude Code 的帮助（`Usage: claude [options]`）→ 说明当前安装的 `cclens` 版本还不包含 trace 功能，升级到最新版本：
 
 ```bash
-node <repo>/src/trace/cli.js <subcommand> ...
+npm install -g claude-code-lens
 ```
 
-`<repo>` 为 `cclens` 源码目录，可通过 `which cclens` 或 `ls /Users/*/open_source_poj/cc/claude-code-lens/src/trace/cli.js` 定位。
+安装完成后再次运行 `cclens trace --help 2>&1` 确认可用。
 
 ## 核心原则
 
@@ -46,6 +46,8 @@ cclens trace list -f json
 | `--since <iso-date>` | 仅返回指定 ISO 8601 时间戳之后的 session |
 | `--limit <n>` | 限制返回数量（在构建摘要前截断，非正整数会触发 `INVALID_ARGUMENT`） |
 | `--max-preview <n>` | 截断 context、status、does、outcome 等摘要字段（默认 120–220 字符不等） |
+
+如果 `cclens trace list` 返回空列表，或列表中找不到用户提及的 session，说明该会话不是通过 cclens 启动的 Claude Code，无法获取 trace 数据。此时应直接告知用户：该会话缺少 trace 记录，可能是未使用 cclens 启动，建议后续通过 cclens 启动 Claude Code 以便捕获 trace。
 
 每个 session 的关键字段：
 
@@ -120,6 +122,7 @@ cclens trace export --session <sessionId> --agent <id> --out /tmp/cclens-<sessio
 | 错误码 | 触发条件 | 恢复方式 |
 | ------ | -------- | -------- |
 | `NO_LOGS` | `raw_logs/` 中没有捕获到会话 | 提示用户先运行 CCLens 捕获一次会话 |
+| *列表为空* | `trace list` 返回空数组，或找不到用户提及的 session | 告知用户：该会话不是通过 cclens 启动的，无法获取 trace。建议后续使用 cclens 启动 Claude Code |
 | `SESSION_NOT_FOUND` | 指定的 `sessionId` 在所有 log 中都不存在 | 重新运行 `trace list -f json`，选择有效的 `sessionId` |
 | `AGENT_NOT_FOUND` | 指定的 agent id 在 session 中不存在 | 重新运行 `trace show --session <id> -f json`，选择有效的 `agents[].id` |
 | `EXPORT_FAILED` | Markdown 写入失败 | 用 `--out /tmp/<name>.md` 重试，或报告路径/权限问题 |

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import test from 'node:test';
-import { buildClaudeArgs } from '../src/cli/service.js';
+import { buildClaudeArgs, buildLocalProxyBaseUrl } from '../src/cli/service.js';
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -46,6 +46,25 @@ test('cclens passthrough uses the generated monitor settings file by default', (
   assert.deepEqual(
     buildClaudeArgs(['--settings', '/tmp/custom-settings.json', '--resume']),
     ['--settings', '/tmp/custom-settings.json', '--resume']
+  );
+});
+
+test('local proxy base URL preserves only the DeepSeek Anthropic path', () => {
+  assert.equal(
+    buildLocalProxyBaseUrl(18888, 'https://api.deepseek.com/anthropic'),
+    'http://localhost:18888/anthropic'
+  );
+  assert.equal(
+    buildLocalProxyBaseUrl(18888, 'https://api.deepseek.com/anthropic/'),
+    'http://localhost:18888/anthropic'
+  );
+  assert.equal(
+    buildLocalProxyBaseUrl(18888, 'https://api.anthropic.com'),
+    'http://localhost:18888'
+  );
+  assert.equal(
+    buildLocalProxyBaseUrl(18888, 'https://third-party.example.com/anthropic'),
+    'http://localhost:18888'
   );
 });
 
