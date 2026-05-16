@@ -356,7 +356,7 @@ export async function exportTraceSession(sessionId, agentId, options = {}) {
       logData: context.logData,
       assignments: context.view.assignments,
       agentId,
-      agent,
+      leadSubagentView: context.view,
       outPath: options.out
     });
     return {

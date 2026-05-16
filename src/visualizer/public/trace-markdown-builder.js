@@ -162,9 +162,47 @@ function filterDetails(agentFilter, view = {}, fileSlug) {
 }
 
 function isTitleGenerationConversation(conv, prompts) {
-  const systemText = contentToMarkdown(conv?.input?.system, prompts);
-  return systemText.includes('Generate a concise, sentence-case title') &&
-    systemText.includes('Return JSON with a single "title" field');
+  return hasTitleOutputSchema(conv?.input?.output_config) ||
+    hasTitleOnlyRequestAndResponse(conv, prompts);
+}
+
+function hasTitleOutputSchema(outputConfig = {}) {
+  const schema = outputConfig?.format?.schema;
+  const properties = schema?.properties || {};
+  const keys = Object.keys(properties);
+  return outputConfig?.format?.type === 'json_schema' &&
+    schema?.type === 'object' &&
+    keys.length === 1 &&
+    keys[0] === 'title' &&
+    properties.title?.type === 'string' &&
+    Array.isArray(schema.required) &&
+    schema.required.length === 1 &&
+    schema.required[0] === 'title' &&
+    schema.additionalProperties === false;
+}
+
+function hasTitleOnlyRequestAndResponse(conv, prompts) {
+  const tools = conv?.input?.tools;
+  const messages = conv?.input?.messages;
+  return (!Array.isArray(tools) || tools.length === 0) &&
+    Array.isArray(messages) &&
+    messages.length === 1 &&
+    messages[0]?.role === 'user' &&
+    responseIsTitleJson(conv?.result?.data?.content, prompts);
+}
+
+function responseIsTitleJson(content, prompts = {}) {
+  const text = contentToMarkdown(content, prompts);
+  try {
+    const parsed = JSON.parse(text);
+    return parsed &&
+      typeof parsed === 'object' &&
+      !Array.isArray(parsed) &&
+      Object.keys(parsed).length === 1 &&
+      typeof parsed.title === 'string';
+  } catch {
+    return false;
+  }
 }
 
 if (typeof window !== 'undefined') {
