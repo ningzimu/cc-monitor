@@ -35,7 +35,11 @@ function agentFilterForId(agentId) {
 
 function conversationsForAgent(conversations = [], agentId = 'all') {
   if (agentId === 'all') return conversations;
-  if (agentId === 'lead') return conversations.filter(conv => conv.agentRole === 'lead');
+  if (agentId === 'lead') {
+    const leadConversations = conversations.filter(conv => conv.agentRole === 'lead');
+    const hasAttribution = conversations.some(conv => conv.agentRole !== 'unmatched' || conv.agentId !== 'unmatched');
+    return leadConversations.length || hasAttribution ? leadConversations : conversations;
+  }
   return conversations.filter(conv => conv.agentId === agentId);
 }
 

@@ -122,9 +122,9 @@ function buildProgram() {
     });
 
   addSharedOptions(program.command('export'))
-    .description('Export one agent, the lead, or all attributed trace requests to Markdown.')
+    .description('Export one agent or the lead to Markdown.')
     .requiredOption('--session <session-id>', 'Session id from cclens trace list')
-    .requiredOption('--agent <agent-id>', 'Agent id from cclens trace show, or lead/all')
+    .requiredOption('--agent <agent-id>', 'Agent id from cclens trace show, or lead')
     .option('--out <path>', 'Write Markdown to this exact path')
     .action(async (options) => {
       const result = await exportTraceSession(options.session, options.agent, sharedOptions(options));

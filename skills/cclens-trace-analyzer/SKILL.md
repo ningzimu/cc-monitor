@@ -28,7 +28,7 @@ npm install -g claude-code-lens
 
 - `cclens trace` 是唯一可信来源。不打开浏览器 UI，不猜测 raw log 路径。
 - 始终使用 `-f json`。将 CLI 输出视为结构化数据，而非自然语言。
-- 默认选择能回答用户问题的最窄范围 — 先看单个 agent，必要时再扩大到 `all`。
+- 默认选择能回答用户问题的最窄范围 — 先看 `lead` 或单个 subagent，必要时分别导出两者对照。
 - `--debug` 仅在需要排查归因统计、log 文件路径或 per-agent 工具调用分布时使用，常规分析不添加。
 - 匹配到多个 session 时，用 `startedAt`、`context` 和 `status` 区分后再继续。
 
@@ -77,21 +77,20 @@ cclens trace show --session <sessionId> -f json
 | -------- | -------- | -------- |
 | 排查整体流程、任务编排问题 | `--agent lead` | 直接指定 |
 | 调查某个 subagent 的行为或失败原因 | `--agent <id>` | 按 `name` 匹配，歧义时看 `does` |
-| 对比 Lead 和 Subagent 的协作 | `--agent all` | 直接指定 |
+| 对比 Lead 和 Subagent 的协作 | 分别导出 `--agent lead` 和 `--agent <id>` | 先用 `lead` 看调度，再用 subagent id 看执行 |
 
 在运行 `show` 之前先读取 `list` 输出中的 `context` 和 `status`，避免对错误 session 做无效操作。
 
 ### 3. 导出 Trace 为 Markdown
 
 ```bash
-cclens trace export --session <sessionId> --agent <agentId|lead|all> -f json
+cclens trace export --session <sessionId> --agent <agentId|lead> -f json
 ```
 
 | 值 | 范围 |
 | -- | ---- |
 | `lead` | 仅主 Agent |
 | `<id>` | 指定 subagent（id 来自 `show` 输出） |
-| `all` | 完整 session，含 lead、所有 subagent 及未归因到特定 agent 的请求 |
 
 指定输出路径：
 
@@ -137,4 +136,4 @@ cclens trace export --session <sessionId> --agent <id> --out /tmp/cclens-<sessio
 - **目标 agent**：`id`、`role`、`name`、`does`
 - **证据**：导出 Markdown 中的简短引用片段，不凭空断言
 - **建议**：具体的 Skill 或工作流修改方案，而非泛泛的观察
-- **置信度**：说明是否使用了 `--debug` 或 `--agent all`，还是仅分析了单个 agent trace
+- **置信度**：说明是否使用了 `--debug`，以及分析了 `lead`、单个 subagent，还是两者都分析了

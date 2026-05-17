@@ -149,6 +149,18 @@ function firstModelThinking(logData) {
   return '';
 }
 
+function firstLensUserText(logData) {
+  const inputs = (logData?.interactions || [])
+    .filter(interaction => interaction?.type === 'input')
+    .sort((a, b) => Date.parse(a.timestamp || 0) - Date.parse(b.timestamp || 0));
+  for (const input of inputs) {
+    const message = input.data?.messages?.at(-1);
+    const text = cleanText(contentToText(message?.content));
+    if (text) return text;
+  }
+  return '';
+}
+
 function summarizeAgent(agent, { spawn = null, events = [], maxPreview, debug = false } = {}) {
   const isLead = agent.role === 'lead';
   const doesSource = isLead
@@ -213,7 +225,13 @@ async function buildSessionContext(logFile, options = {}) {
   const spawns = nativeFile ? collectSpawnDetails(nativeFile) : [];
   const counts = requestCounts(view.assignments);
   const eventsByAgent = nativeTrace ? nativeEventsByAgent(nativeTrace) : new Map();
-  const agents = (nativeTrace?.agents || view.agents || []).map(agent => ({
+  const rawAgents = nativeTrace?.agents || view.agents || [];
+  const agents = (rawAgents.length ? rawAgents : [{
+    id: 'lead',
+    role: 'lead',
+    name: 'Lead',
+    description: firstModelThinking(logData) || firstLensUserText(logData) || logData.session_id
+  }]).map(agent => ({
     ...agent,
     requestCount: counts[agent.id] || 0
   }));
@@ -340,8 +358,7 @@ export async function showTraceSession(sessionId, options = {}) {
 export async function exportTraceSession(sessionId, agentId, options = {}) {
   const context = await findSessionContext(sessionId, options);
   const shown = await showTraceSession(sessionId, options);
-  const agent = shown.agents.find(item => item.id === agentId) ||
-    (agentId === 'all' ? { id: 'all', role: 'all', name: 'All agents' } : null);
+  const agent = shown.agents.find(item => item.id === agentId);
   if (!agent) {
     throw new TraceError(
       'AGENT_NOT_FOUND',
